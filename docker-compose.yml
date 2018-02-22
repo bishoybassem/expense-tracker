@@ -1,0 +1,19 @@
+version: "3"
+services:
+  tracker:
+      build:
+        context: ./tracker
+        dockerfile: Dockerfile
+        args:
+          TRACKER_JAR: build/libs/tracker.jar
+      ports:
+        - 8080:8080
+      depends_on:
+        - db
+  db:
+      image: postgres:10.2-alpine
+      environment:
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: tracker
+      ports:
+        - 5432:5432

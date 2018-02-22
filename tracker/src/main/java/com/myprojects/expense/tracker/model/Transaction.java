@@ -15,7 +15,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "transaction", schema = "expense_tracker_v1")
+@Table(name = "transaction", schema = "tracker_v1")
 public class Transaction {
 
     @Id

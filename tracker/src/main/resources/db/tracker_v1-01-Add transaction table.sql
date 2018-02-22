@@ -1,6 +1,4 @@
-CREATE SCHEMA expense_tracker_v1;
-
-CREATE TABLE expense_tracker_v1.transaction (
+CREATE TABLE tracker_v1.transaction (
   id UUID PRIMARY KEY,
   transaction_type BOOLEAN,
   amount DECIMAL(20, 2),
