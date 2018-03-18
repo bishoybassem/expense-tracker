@@ -6,6 +6,6 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ComponentScan(basePackageClasses = {TransactionService.class})
-public class ServiceConfig {
+public class TrackerServiceConfig {
 
 }

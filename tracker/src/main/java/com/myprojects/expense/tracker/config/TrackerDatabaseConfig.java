@@ -9,6 +9,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @Configuration
 @EnableJpaRepositories(basePackageClasses = TransactionDao.class)
 @EntityScan(basePackageClasses = Transaction.class)
-public class DatabaseConfig {
+public class TrackerDatabaseConfig {
 
 }

@@ -1,19 +1,45 @@
-version: "3"
+version: "3.2"
+networks:
+  default:
+    driver: bridge
+volumes:
+  tracker_db_data:
+  mq_data:
 services:
   tracker:
-      build:
-        context: ./tracker
-        dockerfile: Dockerfile
-        args:
-          TRACKER_JAR: build/libs/tracker.jar
-      ports:
-        - 8080:8080
-      depends_on:
-        - db
-  db:
-      image: postgres:10.2-alpine
-      environment:
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_DB: tracker
-      ports:
-        - 5432:5432
+    build:
+      context: ./tracker
+      dockerfile: Dockerfile
+      args:
+        TRACKER_JAR: build/libs/tracker.jar
+    ports:
+      - 8080:8080
+    depends_on:
+      - tracker_db
+      - mq
+  tracker_db:
+    image: postgres:10.2-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tracker
+    ports:
+      - 5433:5432
+    volumes:
+      - tracker_db_data:/var/lib/postgresql/data
+  reporter:
+    build:
+      context: ./reporter
+      dockerfile: Dockerfile
+      args:
+        REPORTER_JAR: build/libs/reporter.jar
+    ports:
+      - 8081:8080
+    depends_on:
+      - mq
+  mq:
+    image: rabbitmq:3.7.3-management-alpine
+    ports:
+      - 5673:5672
+      - 15672:15672
+    volumes:
+      - mq_data:/var/lib/rabbitmq

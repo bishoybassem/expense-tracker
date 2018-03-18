@@ -1,6 +1,6 @@
 package com.myprojects.expense.tracker.controller;
 
-import com.myprojects.expense.tracker.config.ControllerConfig;
+import com.myprojects.expense.tracker.config.TrackerControllerConfig;
 import com.myprojects.expense.tracker.model.TransactionType;
 import com.myprojects.expense.tracker.model.request.CreateTransactionRequest;
 import com.myprojects.expense.tracker.model.request.UpdateTransactionRequest;
@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @WebMvcTest(TransactionController.class)
-@ContextConfiguration(classes = ControllerConfig.class)
+@ContextConfiguration(classes = TrackerControllerConfig.class)
 @TestExecutionListeners(MockitoTestExecutionListener.class)
 public class TransactionControllerTests extends AbstractTestNGSpringContextTests {
 

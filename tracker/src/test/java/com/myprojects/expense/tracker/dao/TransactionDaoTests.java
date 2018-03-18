@@ -1,6 +1,6 @@
 package com.myprojects.expense.tracker.dao;
 
-import com.myprojects.expense.tracker.config.DatabaseConfig;
+import com.myprojects.expense.tracker.config.TrackerDatabaseConfig;
 import com.myprojects.expense.tracker.model.Transaction;
 import com.myprojects.expense.tracker.model.TransactionType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +16,10 @@ import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @DataJpaTest
-@ContextConfiguration(classes = DatabaseConfig.class)
+@ContextConfiguration(classes = TrackerDatabaseConfig.class)
 public class TransactionDaoTests extends AbstractTestNGSpringContextTests {
 
     @Autowired
@@ -45,7 +44,7 @@ public class TransactionDaoTests extends AbstractTestNGSpringContextTests {
 
     @Test(dependsOnMethods = "testCreate")
     public void testFind() throws Exception {
-        Transaction transaction = dao.findOne(createdTransactionId);
+        Transaction transaction = dao.findById(createdTransactionId).get();
 
         assertThat(transaction.getType(), is(TransactionType.EXPENSE));
         assertThat(transaction.getAmount(), is(new BigDecimal("1.23")));
@@ -56,11 +55,11 @@ public class TransactionDaoTests extends AbstractTestNGSpringContextTests {
 
     @Test(dependsOnMethods = {"testCreate", "testFind"})
     public void testUpdate() throws Exception {
-        Transaction transaction = dao.findOne(createdTransactionId);
+        Transaction transaction = dao.findById(createdTransactionId).get();
         transaction.setType(TransactionType.INCOME);
         transaction.setDate(LocalDate.of(1992, Month.MARCH, 9));
         dao.save(transaction);
-        transaction = dao.findOne(createdTransactionId);
+        transaction = dao.findById(createdTransactionId).get();
 
         assertThat(transaction.getType(), is(TransactionType.INCOME));
         assertThat(transaction.getAmount(), is(new BigDecimal("1.23")));
@@ -71,9 +70,9 @@ public class TransactionDaoTests extends AbstractTestNGSpringContextTests {
 
     @Test(dependsOnMethods = {"testCreate", "testFind", "testUpdate"})
     public void testDelete() throws Exception {
-        dao.delete(createdTransactionId);
+        dao.deleteById(createdTransactionId);
 
-        assertThat(dao.findOne(createdTransactionId), nullValue());
+        assertThat(dao.findById(createdTransactionId).isPresent(), is(false));
     }
 
 }
