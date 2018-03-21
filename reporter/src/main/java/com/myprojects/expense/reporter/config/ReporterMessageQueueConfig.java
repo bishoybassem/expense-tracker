@@ -1,6 +1,6 @@
 package com.myprojects.expense.reporter.config;
 
-import com.myprojects.expense.reporter.service.AggregationService;
+import com.myprojects.expense.reporter.service.TransactionEventHandler;
 import com.myprojects.expense.reporter.service.MessageToEventConverter;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -36,8 +36,8 @@ public class ReporterMessageQueueConfig {
     @Bean
     public SimpleMessageListenerContainer messageListenerContainer(ConnectionFactory connectionFactory,
                                                                    MessageToEventConverter converter,
-                                                                   AggregationService aggregationService) {
-        MessageListenerAdapter listener = new MessageListenerAdapter(aggregationService);
+                                                                   TransactionEventHandler eventHandler) {
+        MessageListenerAdapter listener = new MessageListenerAdapter(eventHandler);
         listener.setDefaultListenerMethod("handleTransactionEvent");
         listener.setMessageConverter(converter);
 
