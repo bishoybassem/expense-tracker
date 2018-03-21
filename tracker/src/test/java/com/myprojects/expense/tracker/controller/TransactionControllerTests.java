@@ -22,13 +22,13 @@ import org.testng.annotations.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
@@ -105,17 +105,56 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
     @Test
     public void testGetRequestSerializesToJsonCorrectly() throws Exception {
         final UUID transactionId = UUID.randomUUID();
-        final TransactionResponse mockServiceResponse = new TransactionResponse();
-        mockServiceResponse.setId(transactionId);
-        mockServiceResponse.setType(TransactionType.EXPENSE);
-        mockServiceResponse.setAmount(new BigDecimal("1.23"));
-        mockServiceResponse.setCategory("abc");
-        mockServiceResponse.setDate(LocalDate.of(2018, Month.FEBRUARY, 13));
-        mockServiceResponse.setComment("comment");
-
+        TransactionResponse mockServiceResponse = createTestTransactionResponse(transactionId);
         Mockito.when(mockTransactionService.get(transactionId)).thenReturn(mockServiceResponse);
 
-        final String expectedResponseBody = "{"
+        mockMvc.perform(get(TransactionController.PATH + "/" + transactionId))
+                .andDo(print())
+                .andExpect(content()
+                        .json(expectedJsonResponseBody(transactionId), true));
+    }
+
+    @Test
+    public void testGetAllRequestSerializesToJsonCorrectly() throws Exception {
+        final UUID transactionId1 = UUID.randomUUID();
+        final UUID transactionId2 = UUID.randomUUID();
+        List<TransactionResponse> mockServiceResponse = Arrays.asList(createTestTransactionResponse(transactionId1),
+                        createTestTransactionResponse(transactionId2));
+        Mockito.when(mockTransactionService.getAll()).thenReturn(mockServiceResponse);
+
+        String expectedResponseBody = "[" + expectedJsonResponseBody(transactionId1) + ","
+                + expectedJsonResponseBody(transactionId2) + "]";
+        mockMvc.perform(get(TransactionController.PATH))
+                .andDo(print())
+                .andExpect(content()
+                        .json(expectedResponseBody, true));
+    }
+
+    @Test
+    public void testDeleteRequestSerializesToJsonCorrectly() throws Exception {
+        final UUID transactionId = UUID.randomUUID();
+        TransactionResponse mockServiceResponse = createTestTransactionResponse(transactionId);
+        Mockito.when(mockTransactionService.delete(transactionId)).thenReturn(mockServiceResponse);
+
+        mockMvc.perform(delete(TransactionController.PATH + "/" + transactionId))
+                .andDo(print())
+                .andExpect(content()
+                        .json(expectedJsonResponseBody(transactionId), true));
+    }
+
+    private static TransactionResponse createTestTransactionResponse(UUID transactionId) {
+        final TransactionResponse response = new TransactionResponse();
+        response.setId(transactionId);
+        response.setType(TransactionType.EXPENSE);
+        response.setAmount(new BigDecimal("1.23"));
+        response.setCategory("abc");
+        response.setDate(LocalDate.of(2018, Month.FEBRUARY, 13));
+        response.setComment("comment");
+        return response;
+    }
+
+    private static String expectedJsonResponseBody(UUID transactionId) {
+        return "{"
                 + "\"id\":\"" + transactionId + "\","
                 + "\"type\":\"EXPENSE\","
                 + "\"amount\":1.23,"
@@ -123,10 +162,5 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
                 + "\"date\":\"2018/02/13\","
                 + "\"comment\":\"comment\""
                 + "}";
-
-        mockMvc.perform(get(TransactionController.PATH + "/" + transactionId))
-                .andDo(print())
-                .andExpect(content()
-                        .json(expectedResponseBody, true));
     }
 }

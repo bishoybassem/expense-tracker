@@ -1,1 +1,33 @@
-apply plugin: 'idea'
+allprojects {
+    apply plugin: 'idea'
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'jacoco'
+
+    repositories {
+        mavenCentral()
+    }
+
+    tasks.withType(Test) {
+        useTestNG() {
+            useDefaultListeners = true
+        }
+
+        testLogging {
+            showStandardStreams = true
+            events 'started', 'passed', 'skipped', 'failed'
+        }
+
+        outputs.upToDateWhen { false }
+    }
+
+    jacocoTestReport {
+        dependsOn tasks.withType(Test)
+        reports {
+            xml.enabled = true
+            html.enabled = true
+        }
+    }
+}

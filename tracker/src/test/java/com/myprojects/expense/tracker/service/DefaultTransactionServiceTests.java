@@ -24,6 +24,8 @@ import org.testng.annotations.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,6 +33,7 @@ import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
@@ -73,6 +76,27 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
         when(mockTransactionDao.findById(any())).thenReturn(Optional.empty());
 
         transactionService.delete(randomUUID());
+    }
+
+    @Test
+    public void testGet() throws Exception {
+        Transaction transaction = createTestTransaction();
+        when(mockTransactionDao.findById(transaction.getId())).thenReturn(Optional.of(transaction));
+
+        TransactionResponse response = transactionService.get(transaction.getId());
+        assertTransactionResponse(response, transaction.getId());
+    }
+
+    @Test
+    public void testGetAll() throws Exception {
+        Transaction transaction1 = createTestTransaction();
+        Transaction transaction2 = createTestTransaction();
+        when(mockTransactionDao.findAll()).thenReturn(Arrays.asList(transaction1, transaction2));
+
+        List<TransactionResponse> response = transactionService.getAll();
+        assertThat(response, hasSize(2));
+        assertTransactionResponse(response.get(0), transaction1.getId());
+        assertTransactionResponse(response.get(1), transaction2.getId());
     }
 
     @Test
