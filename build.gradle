@@ -1,33 +1,41 @@
-allprojects {
-    apply plugin: 'idea'
+plugins {
+    id "com.palantir.jacoco-full-report" version "0.4.0"
 }
 
-subprojects {
-    apply plugin: 'java'
-    apply plugin: 'jacoco'
+allprojects {
+    apply plugin: 'idea'
 
     repositories {
         mavenCentral()
     }
+}
 
-    tasks.withType(Test) {
-        useTestNG() {
-            useDefaultListeners = true
+subprojects {
+    if (project.name == 'tracker' || project.name == 'reporter') {
+        apply plugin: 'java'
+        apply plugin: 'jacoco'
+
+        tasks.withType(Test) {
+            useTestNG() {
+                useDefaultListeners = true
+            }
+
+            testLogging {
+                showStandardStreams = true
+                events 'started', 'passed', 'skipped', 'failed'
+            }
+
+            outputs.upToDateWhen { false }
         }
 
-        testLogging {
-            showStandardStreams = true
-            events 'started', 'passed', 'skipped', 'failed'
-        }
-
-        outputs.upToDateWhen { false }
-    }
-
-    jacocoTestReport {
-        dependsOn tasks.withType(Test)
-        reports {
-            xml.enabled = true
-            html.enabled = true
+        jacocoTestReport {
+            dependsOn tasks.withType(Test)
+            reports {
+                xml.enabled = true
+                html.enabled = true
+            }
         }
     }
 }
+
+jacocoFullReport.dependsOn ':tracker:jacocoTestReport', ':reporter:jacocoTestReport'

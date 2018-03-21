@@ -1,11 +1,10 @@
 package com.myprojects.expense.tracker.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.myprojects.expense.tracker.service.EventToMessageConverter;
 import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,10 +19,11 @@ public class TrackerMessageQueueConfig {
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, ObjectMapper objectMapper) {
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
+                                         EventToMessageConverter converter) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setExchange(EXCHANGE_NAME);
-        rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter(objectMapper));
+        rabbitTemplate.setMessageConverter(converter);
         return rabbitTemplate;
     }
 

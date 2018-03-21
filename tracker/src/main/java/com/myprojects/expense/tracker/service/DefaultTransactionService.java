@@ -1,19 +1,19 @@
 package com.myprojects.expense.tracker.service;
 
 import com.google.common.collect.Streams;
+import com.myprojects.expense.messages.EventProtos.Event;
+import com.myprojects.expense.messages.EventProtos.EventData;
+import com.myprojects.expense.messages.EventProtos.EventType;
 import com.myprojects.expense.tracker.dao.TransactionDao;
 import com.myprojects.expense.tracker.exception.TransactionNotFoundException;
 import com.myprojects.expense.tracker.model.Transaction;
-import com.myprojects.expense.tracker.model.event.CreateEvent;
-import com.myprojects.expense.tracker.model.event.DeleteEvent;
-import com.myprojects.expense.tracker.model.event.EventData;
-import com.myprojects.expense.tracker.model.event.ModifyEvent;
 import com.myprojects.expense.tracker.model.request.CreateTransactionRequest;
 import com.myprojects.expense.tracker.model.request.UpdateTransactionRequest;
 import com.myprojects.expense.tracker.model.response.TransactionResponse;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class DefaultTransactionService implements TransactionService {
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final TransactionDao transactionDao;
     private final RabbitTemplate rabbitTemplate;
@@ -48,9 +50,7 @@ public class DefaultTransactionService implements TransactionService {
         Transaction transaction = getTransaction(id);
         transactionDao.delete(transaction);
 
-        DeleteEvent deleteEvent = new DeleteEvent(id);
-        deleteEvent.setTransactionData(createEventData(transaction));
-        rabbitTemplate.convertAndSend(deleteEvent);
+        rabbitTemplate.convertAndSend(createEvent(EventType.DELETE, transaction, null));
 
         return createResponse(transaction);
     }
@@ -65,9 +65,7 @@ public class DefaultTransactionService implements TransactionService {
         transaction.setComment(request.getComment());
         transaction = transactionDao.save(transaction);
 
-        CreateEvent createEvent = new CreateEvent(transaction.getId());
-        createEvent.setTransactionData(createEventData(transaction));
-        rabbitTemplate.convertAndSend(createEvent);
+        rabbitTemplate.convertAndSend(createEvent(EventType.CREATE, transaction, null));
 
         return createResponse(transaction);
     }
@@ -84,10 +82,7 @@ public class DefaultTransactionService implements TransactionService {
         transaction.setComment(request.getComment());
         transaction = transactionDao.save(transaction);
 
-        ModifyEvent modifyEvent = new ModifyEvent(transaction.getId());
-        modifyEvent.setTransactionData(oldTransactionData);
-        modifyEvent.setNewTransactionData(createEventData(transaction));
-        rabbitTemplate.convertAndSend(modifyEvent);
+        rabbitTemplate.convertAndSend(createEvent(EventType.MODIFY, transaction, oldTransactionData));
 
         return createResponse(transaction);
     }
@@ -111,12 +106,24 @@ public class DefaultTransactionService implements TransactionService {
         return response;
     }
 
+    private static Event createEvent(EventType eventType, Transaction transaction,
+                                     EventData oldTransactionData) {
+        return Event.newBuilder()
+                .setType(eventType)
+                .setTransactionId(transaction.getId().toString())
+                .setTransactionType(transaction.getType().getBooleanValue())
+                .setTransactionData(createEventData(transaction))
+                .setOldTransactionData(oldTransactionData == null ?
+                        EventData.newBuilder().build() : oldTransactionData)
+                .build();
+    }
+
     private static EventData createEventData(Transaction transaction) {
-        EventData eventData = new EventData();
-        eventData.setAmount(transaction.getAmount());
-        eventData.setCategory(transaction.getCategory());
-        eventData.setDate(transaction.getDate());
-        return eventData;
+        return EventData.newBuilder()
+                .setAmount(transaction.getAmount().toString())
+                .setCategory(transaction.getCategory())
+                .setDate(DATE_FORMATTER.format(transaction.getDate()))
+                .build();
     }
 
 }

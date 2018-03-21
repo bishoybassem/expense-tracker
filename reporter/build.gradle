@@ -5,5 +5,10 @@ plugins {
 apply plugin: 'io.spring.dependency-management'
 
 dependencies {
+    compile project(':mq-messages')
+
     compile 'org.springframework.boot:spring-boot-starter-amqp'
+
+    testCompile 'org.testng:testng:6.14.2'
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
 }

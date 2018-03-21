@@ -1,11 +1,13 @@
 package com.myprojects.expense.tracker.service;
 
+import com.myprojects.expense.messages.EventProtos.Event;
+import com.myprojects.expense.messages.EventProtos.EventData;
+import com.myprojects.expense.messages.EventProtos.EventType;
 import com.myprojects.expense.tracker.config.TrackerServiceConfig;
 import com.myprojects.expense.tracker.dao.TransactionDao;
 import com.myprojects.expense.tracker.exception.TransactionNotFoundException;
 import com.myprojects.expense.tracker.model.Transaction;
 import com.myprojects.expense.tracker.model.TransactionType;
-import com.myprojects.expense.tracker.model.event.*;
 import com.myprojects.expense.tracker.model.request.CreateTransactionRequest;
 import com.myprojects.expense.tracker.model.request.UpdateTransactionRequest;
 import com.myprojects.expense.tracker.model.response.TransactionResponse;
@@ -118,13 +120,12 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
         TransactionResponse response = transactionService.create(request);
         assertTransactionResponse(response, transactionId);
 
-        ArgumentCaptor<CreateEvent> requestCaptor = ArgumentCaptor.forClass(CreateEvent.class);
+        ArgumentCaptor<Event> requestCaptor = ArgumentCaptor.forClass(Event.class);
         Mockito.verify(mockRabbitTemplate).convertAndSend(requestCaptor.capture());
 
-        CreateEvent createEvent = requestCaptor.getValue();
-        assertThat(createEvent, notNullValue());
-        assertThat(createEvent.getEventType(), is(EventType.CREATE));
-        assertEventData(createEvent, transactionId);
+        Event createEvent = requestCaptor.getValue();
+        assertEvent(createEvent, EventType.CREATE, transactionId);
+        assertEventData(createEvent.getTransactionData());
     }
 
     @Test
@@ -147,16 +148,15 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
         assertThat(response.getDate(), is(LocalDate.of(2020, Month.MARCH, 9)));
         assertThat(response.getComment(), is("another comment"));
 
-        ArgumentCaptor<ModifyEvent> requestCaptor = ArgumentCaptor.forClass(ModifyEvent.class);
+        ArgumentCaptor<Event> requestCaptor = ArgumentCaptor.forClass(Event.class);
         Mockito.verify(mockRabbitTemplate).convertAndSend(requestCaptor.capture());
 
-        ModifyEvent modifyEvent = requestCaptor.getValue();
-        assertThat(modifyEvent, notNullValue());
-        assertThat(modifyEvent.getEventType(), is(EventType.MODIFY));
-        assertEventData(modifyEvent, transaction.getId());
-        assertThat(modifyEvent.getNewTransactionData().getAmount(), is(new BigDecimal("2.34")));
-        assertThat(modifyEvent.getNewTransactionData().getCategory(), is("xyz"));
-        assertThat(modifyEvent.getNewTransactionData().getDate(), is(LocalDate.of(2020, Month.MARCH, 9)));
+        Event modifyEvent = requestCaptor.getValue();
+        assertEvent(modifyEvent, EventType.MODIFY, transaction.getId());
+        assertEventData(modifyEvent.getOldTransactionData());
+        assertThat(modifyEvent.getTransactionData().getAmount(), is("2.34"));
+        assertThat(modifyEvent.getTransactionData().getCategory(), is("xyz"));
+        assertThat(modifyEvent.getTransactionData().getDate(), is("09/03/2020"));
     }
 
     @Test
@@ -167,13 +167,12 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
         TransactionResponse response = transactionService.delete(transaction.getId());
         assertTransactionResponse(response, transaction.getId());
 
-        ArgumentCaptor<DeleteEvent> requestCaptor = ArgumentCaptor.forClass(DeleteEvent.class);
+        ArgumentCaptor<Event> requestCaptor = ArgumentCaptor.forClass(Event.class);
         Mockito.verify(mockRabbitTemplate).convertAndSend(requestCaptor.capture());
 
-        DeleteEvent deleteEvent = requestCaptor.getValue();
-        assertThat(deleteEvent, notNullValue());
-        assertThat(deleteEvent.getEventType(), is(EventType.DELETE));
-        assertEventData(deleteEvent, transaction.getId());
+        Event deleteEvent = requestCaptor.getValue();
+        assertEvent(deleteEvent, EventType.DELETE, transaction.getId());
+        assertEventData(deleteEvent.getTransactionData());
     }
 
 
@@ -197,10 +196,15 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
         assertThat(response.getComment(), is("comment"));
     }
 
-    private static void assertEventData(Event event, UUID transactionUUID) {
-        assertThat(event.getTransactionId(), is(transactionUUID));
-        assertThat(event.getTransactionData().getAmount(), is(new BigDecimal("1.23")));
-        assertThat(event.getTransactionData().getCategory(), is("abc"));
-        assertThat(event.getTransactionData().getDate(), is(LocalDate.of(2018, Month.FEBRUARY, 13)));
+    private static void assertEvent(Event event, EventType type, UUID transactionId) {
+        assertThat(event, notNullValue());
+        assertThat(event.getType(), is(type));
+        assertThat(event.getTransactionId(), is(transactionId.toString()));
+    }
+
+    private static void assertEventData(EventData eventData) {
+        assertThat(eventData.getAmount(), is("1.23"));
+        assertThat(eventData.getCategory(), is("abc"));
+        assertThat(eventData.getDate(), is("13/02/2018"));
     }
 }

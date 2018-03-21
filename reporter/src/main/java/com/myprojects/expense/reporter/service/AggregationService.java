@@ -1,7 +1,9 @@
 package com.myprojects.expense.reporter.service;
 
+import com.myprojects.expense.messages.EventProtos.Event;
+
 public interface AggregationService {
 
-    void handleMessage(byte[] message);
+    void handleTransactionEvent(Event event);
 
 }

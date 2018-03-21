@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package messages;
+
+option java_package = "com.myprojects.expense.messages";
+option java_outer_classname = "EventProtos";
+
+enum EventType {
+    CREATE = 0;
+    MODIFY = 1;
+    DELETE = 2;
+}
+
+message EventData {
+    string amount = 1;
+    string category = 2;
+    string date = 3;
+}
+
+message Event {
+    EventType type = 1;
+    string transactionId = 2;
+    bool transactionType = 3;
+    EventData transactionData = 4;
+    EventData oldTransactionData = 5;
+}

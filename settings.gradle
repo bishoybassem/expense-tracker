@@ -1,1 +1,1 @@
-include 'tracker', 'reporter'
+include 'tracker', 'reporter', 'mq-messages'
