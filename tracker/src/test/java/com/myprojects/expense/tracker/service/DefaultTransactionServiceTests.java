@@ -77,7 +77,7 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
 
     @Test
     public void testCreatePassesAllFieldsCorrectly() throws Exception {
-        final UUID transactionId = UUID.randomUUID();
+        final UUID transactionId = randomUUID();
         when(mockTransactionDao.save(any(Transaction.class))).thenAnswer(invocation -> {
             Transaction transaction = invocation.getArgument(0);
             transaction.setId(transactionId);
@@ -155,7 +155,7 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
 
     private static Transaction createTestTransaction() {
         Transaction transaction = new Transaction();
-        transaction.setId(UUID.randomUUID());
+        transaction.setId(randomUUID());
         transaction.setType(TransactionType.EXPENSE);
         transaction.setAmount(new BigDecimal("1.23"));
         transaction.setCategory("abc");

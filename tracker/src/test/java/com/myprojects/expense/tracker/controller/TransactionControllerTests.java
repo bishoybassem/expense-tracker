@@ -38,10 +38,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class TransactionControllerTests extends AbstractTestNGSpringContextTests {
 
     @MockBean
-    TransactionService mockTransactionService;
+    private TransactionService mockTransactionService;
 
     @Autowired
-    MockMvc mockMvc;
+    private MockMvc mockMvc;
 
     @Test
     public void testCreateRequestDeserializesFromJsonCorrectly() throws Exception {
