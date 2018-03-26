@@ -38,4 +38,16 @@ subprojects {
     }
 }
 
+configurations { codacy }
+
+dependencies {
+    codacy 'com.codacy:codacy-coverage-reporter:+'
+}
+
 jacocoFullReport.dependsOn ':tracker:jacocoTestReport', ':reporter:jacocoTestReport'
+
+task sendCoverageToCodacy(type: JavaExec) {
+    main = "com.codacy.CodacyCoverageReporter"
+    classpath = configurations.codacy
+    args = ["report", "-l", "Java", "-r", jacocoFullReport.reports.xml.destination.toString()]
+}
