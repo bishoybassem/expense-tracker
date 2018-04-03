@@ -3,16 +3,13 @@ package com.myprojects.expense.reporter.service;
 import com.myprojects.expense.messages.EventProtos;
 import com.myprojects.expense.reporter.dao.DayReportDao;
 import com.myprojects.expense.reporter.model.DayReport;
-import com.myprojects.expense.reporter.model.ReportDate;
 import com.myprojects.expense.reporter.model.ReportStats;
 import com.myprojects.expense.reporter.model.ReportTransaction;
-import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,9 +19,11 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final DayReportDao dayReportDao;
+    private final ReportService reportService;
 
-    public DefaultTransactionEventHandler(DayReportDao dayReportDao) {
+    public DefaultTransactionEventHandler(DayReportDao dayReportDao, ReportService reportService) {
         this.dayReportDao = dayReportDao;
+        this.reportService = reportService;
     }
 
     @Override
@@ -40,7 +39,7 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
     }
 
     private void handleCreateEvent(String transactionId, boolean transactionType, EventProtos.EventData transactionData) {
-        DayReport dayReport = findOrCreateReportByDate(transactionData.getDate());
+        DayReport dayReport = getDayReport(transactionData.getDate());
 
         ReportTransaction transaction = new ReportTransaction();
         transaction.setId(transactionId);
@@ -61,7 +60,7 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
     }
 
     private void handleDeleteEvent(String transactionId, boolean transactionType, EventProtos.EventData transactionData) {
-        DayReport dayReport = findOrCreateReportByDate(transactionData.getDate());
+        DayReport dayReport = getDayReport(transactionData.getDate());
 
         ReportStats stats = dayReport.getStats();
         if (transactionType) {
@@ -92,17 +91,10 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
         return BigDecimal.ZERO;
     }
 
-    private DayReport findOrCreateReportByDate(String date) {
+    private DayReport getDayReport(String date) {
         LocalDate localDate = LocalDate.parse(date, DATE_FORMATTER);
-        DayReport dayReportProbe = new DayReport();
-        dayReportProbe.setDate(new ReportDate(localDate));
-        Optional<DayReport> dayReport = dayReportDao.findOne(Example.of(dayReportProbe));
-        return dayReport.orElseGet(() -> {
-            dayReportProbe.setStats(new ReportStats(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
-            dayReportProbe.setIncomes(new ArrayList<>());
-            dayReportProbe.setExpenses(new ArrayList<>());
-            return dayReportDao.save(dayReportProbe);
-        });
+        return reportService.getDayReport(localDate.getYear(), localDate.getMonthValue(),
+                localDate.getDayOfMonth());
     }
 
 }

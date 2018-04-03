@@ -13,7 +13,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.annotations.Test;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 
 import static java.math.BigDecimal.TEN;
@@ -42,7 +41,7 @@ public class DayReportDaoTests extends AbstractTestNGSpringContextTests {
         expenses.add(new ReportTransaction("id2", TEN, "xyz"));
 
         DayReport report = new DayReport();
-        report.setDate(new ReportDate(LocalDate.of(2000, 12, 1)));
+        report.setDate(new ReportDate(2000, 12, 1));
         report.setIncomes(incomes);
         report.setExpenses(expenses);
         report.setStats(new ReportStats(ZERO, TEN, TEN));
@@ -53,9 +52,9 @@ public class DayReportDaoTests extends AbstractTestNGSpringContextTests {
     }
 
     @Test(dependsOnMethods = "testCreate")
-    public void testName() throws Exception {
+    public void testFindOne() throws Exception {
         DayReport reportProbe = new DayReport();
-        reportProbe.setDate(new ReportDate(LocalDate.of(2000, 12, 1)));
+        reportProbe.setDate(new ReportDate(2000, 12, 1));
 
         DayReport report = dayReportDao.findOne(Example.of(reportProbe)).get();
 

@@ -1,7 +1,5 @@
 package com.myprojects.expense.reporter.model;
 
-import java.time.LocalDate;
-
 public class ReportDate {
 
     private int day;
@@ -12,10 +10,10 @@ public class ReportDate {
 
     }
 
-    public ReportDate(LocalDate date) {
-        this.day = date.getDayOfMonth();
-        this.month = date.getMonthValue();
-        this.year = date.getYear();
+    public ReportDate(int year, int month, int day) {
+        this.year = year;
+        this.month = month;
+        this.day = day;
     }
 
     public int getDay() {

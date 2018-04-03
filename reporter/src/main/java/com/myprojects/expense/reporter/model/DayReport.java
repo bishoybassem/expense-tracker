@@ -19,6 +19,10 @@ public class DayReport {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public ReportDate getDate() {
         return date;
     }
