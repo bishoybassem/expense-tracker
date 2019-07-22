@@ -1,4 +1,4 @@
-FROM openjdk:8-jre-alpine
+FROM openjdk:11-jre-slim
 LABEL maintainer="bishoy"
 WORKDIR /webapp
 ARG TRACKER_JAR

@@ -47,7 +47,7 @@ dependencies {
 jacocoFullReport.dependsOn ':tracker:jacocoTestReport', ':reporter:jacocoTestReport'
 
 task sendCoverageToCodacy(type: JavaExec) {
-    main = "com.codacy.CodacyCoverageReporter"
+    main = 'com.codacy.CodacyCoverageReporter'
     classpath = configurations.codacy
-    args = ["report", "-l", "Java", "-r", jacocoFullReport.reports.xml.destination.toString()]
+    args = ['report', '-l', 'Java', '-r', jacocoFullReport.reports.xml.destination.toString()]
 }

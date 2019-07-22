@@ -1,5 +1,8 @@
 language: java
 
+jdk:
+- oraclejdk11
+
 script: ./gradlew check jacocoFullReport sendCoverageToCodacy
 
 before_cache:
