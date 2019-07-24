@@ -1,15 +1,18 @@
 version: "3.7"
 services:
   tracker:
+    image: tracker
     build:
       context: tracker
       args:
         TRACKER_JAR: build/libs/tracker.jar
+        JACOCO_AGENT_JAR: build/libs/jacocoagent.jar
     ports:
       - 8080:8080
     depends_on:
       - tracker-db
       - mq
+    command: ["tracker-db:5432", "mq:5672"]
   tracker-db:
     image: postgres:11.4-alpine
     environment:
@@ -18,15 +21,18 @@ services:
     ports:
       - 5433:5432
   reporter:
+    image: reporter
     build:
       context: reporter
       args:
         REPORTER_JAR: build/libs/reporter.jar
+        JACOCO_AGENT_JAR: build/libs/jacocoagent.jar
     ports:
       - 8081:8080
     depends_on:
       - reporter-db
       - mq
+    command: ["reporter-db:27017", "mq:5672"]
   reporter-db:
     image: mongo:4.0.10
     ports:

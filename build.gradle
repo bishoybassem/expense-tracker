@@ -1,4 +1,5 @@
 plugins {
+    id "com.avast.gradle.docker-compose" version "0.9.4"
     id "com.palantir.jacoco-full-report" version "0.4.0"
 }
 
@@ -15,6 +16,14 @@ subprojects {
         apply plugin: 'java'
         apply plugin: 'jacoco'
 
+        configurations {
+            jacocoAgentRuntime
+        }
+
+        dependencies {
+            jacocoAgentRuntime "org.jacoco:org.jacoco.agent:${jacoco.toolVersion}:runtime"
+        }
+
         tasks.withType(Test) {
             useTestNG() {
                 useDefaultListeners = true
@@ -26,6 +35,8 @@ subprojects {
             }
 
             outputs.upToDateWhen { false }
+
+            dependsOn ':servicesComposeUp'
         }
 
         jacocoTestReport {
@@ -35,6 +46,16 @@ subprojects {
                 html.enabled = true
             }
         }
+
+        assemble.doLast {
+            copy {
+                from configurations.jacocoAgentRuntime[0]
+                into "${buildDir}/libs"
+                rename '.*jar', 'jacocoagent.jar'
+            }
+        }
+
+        rootProject.tasks.getByName('composeUp') dependsOn assemble
     }
 }
 
@@ -44,10 +65,24 @@ dependencies {
     codacy 'com.codacy:codacy-coverage-reporter:+'
 }
 
-jacocoFullReport.dependsOn ':tracker:jacocoTestReport', ':reporter:jacocoTestReport'
+jacocoFullReport {
+    executionData(fileTree(".").matching { include "**/*.exec" })
+}
 
 task sendCoverageToCodacy(type: JavaExec) {
     main = 'com.codacy.CodacyCoverageReporter'
     classpath = configurations.codacy
     args = ['report', '-l', 'Java', '-r', jacocoFullReport.reports.xml.destination.toString()]
+    dependsOn jacocoFullReport
+}
+
+dockerCompose {
+    forceRecreate = true
+    projectName = "expense-tracker"
+    services {
+        startedServices = ['tracker-db', 'reporter-db', 'mq']
+        upAdditionalArgs = ['--renew-anon-volumes']
+        forceRecreate = true
+        projectName = "expense-tracker"
+    }
 }

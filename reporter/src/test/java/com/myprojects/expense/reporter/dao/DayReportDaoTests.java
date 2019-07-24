@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.data.domain.Example;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -31,6 +32,11 @@ public class DayReportDaoTests extends AbstractTestNGSpringContextTests {
     private DayReportDao dayReportDao;
 
     private String createdReportId;
+
+    @BeforeClass
+    public void cleanup() {
+        dayReportDao.deleteAll();
+    }
 
     @Test
     public void testCreate() throws Exception {
