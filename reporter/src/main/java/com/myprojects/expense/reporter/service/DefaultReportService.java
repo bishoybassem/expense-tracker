@@ -1,15 +1,13 @@
 package com.myprojects.expense.reporter.service;
 
 import com.myprojects.expense.reporter.dao.DayReportDao;
+import com.myprojects.expense.reporter.exception.ReportNotFoundException;
 import com.myprojects.expense.reporter.model.DayReport;
-import com.myprojects.expense.reporter.model.ReportDate;
-import com.myprojects.expense.reporter.model.ReportStats;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Optional;
+import java.time.LocalDate;
 
 @Service
 public class DefaultReportService implements ReportService {
@@ -21,16 +19,25 @@ public class DefaultReportService implements ReportService {
     }
 
     @Override
-    public DayReport getDayReport(int year, int month, int day) {
+    public DayReport getDayReport(LocalDate date) {
         DayReport dayReportProbe = new DayReport();
-        dayReportProbe.setDate(new ReportDate(year, month, day));
-        Optional<DayReport> dayReport = dayReportDao.findOne(Example.of(dayReportProbe));
-        return dayReport.orElseGet(() -> {
-            dayReportProbe.setStats(new ReportStats(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
-            dayReportProbe.setIncomes(new ArrayList<>());
-            dayReportProbe.setExpenses(new ArrayList<>());
-            return dayReportDao.save(dayReportProbe);
-        });
+        dayReportProbe.setDate(date);
+        return dayReportDao.findOne(Example.of(dayReportProbe))
+                .orElseThrow(() -> new ReportNotFoundException());
+    }
+
+    @Override
+    public DayReport getDayReportOrCreate(LocalDate date) {
+        try {
+            return getDayReport(date);
+        } catch (ReportNotFoundException ex) {
+            try {
+                dayReportDao.save(DayReport.emptyReport(date));
+            } catch (DuplicateKeyException e) {
+                // Report already exists.
+            }
+            return getDayReport(date);
+        }
     }
 
 }

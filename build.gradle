@@ -77,6 +77,7 @@ task sendCoverageToCodacy(type: JavaExec) {
 }
 
 dockerCompose {
+    upAdditionalArgs = ['--renew-anon-volumes']
     forceRecreate = true
     projectName = "expense-tracker"
     services {

@@ -6,7 +6,6 @@ import com.myprojects.expense.messages.EventProtos.EventType;
 import com.myprojects.expense.reporter.config.ReporterServiceConfig;
 import com.myprojects.expense.reporter.dao.DayReportDao;
 import com.myprojects.expense.reporter.model.DayReport;
-import com.myprojects.expense.reporter.model.ReportDate;
 import com.myprojects.expense.reporter.model.ReportStats;
 import com.myprojects.expense.reporter.model.ReportTransaction;
 import org.mockito.ArgumentCaptor;
@@ -21,6 +20,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 import static java.math.BigDecimal.*;
@@ -35,6 +36,8 @@ import static org.mockito.Mockito.atLeast;
 @TestExecutionListeners(MockitoTestExecutionListener.class)
 public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringContextTests {
 
+    private static final LocalDate TEST_DATE = LocalDate.now();
+    private static final String TEST_DATE_FORMATTED = TEST_DATE.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     private static final BigDecimal FIVE = new BigDecimal("5");
 
     @MockBean
@@ -47,12 +50,12 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
     private DefaultTransactionEventHandler defaultTransactionEventHandler;
 
     @AfterMethod
-    public void resetMocks() throws Exception {
+    public void resetMocks() {
         Mockito.reset(dayReportDao);
     }
 
     @Test
-    public void testCreateEventForExpenseTransaction() throws Exception {
+    public void testCreateEventForExpenseTransaction() {
         mockInitialReportNoTransactions();
         DayReport report = handleEvent(newCreateEvent("some_id", false));
         assertThat(report.getIncomes(), hasSize(0));
@@ -66,7 +69,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
     }
 
     @Test
-    public void testCreateEventForIncomeTransaction() throws Exception {
+    public void testCreateEventForIncomeTransaction() {
         mockInitialReportNoTransactions();
         DayReport report = handleEvent(newCreateEvent("some_id", true));
         assertThat(report.getIncomes(), hasSize(1));
@@ -80,7 +83,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
     }
 
     @Test
-    public void testCreateEventWithInitialReport() throws Exception {
+    public void testCreateEventWithInitialReport() {
         mockInitialReport("income_id1", "expense_id1");
         DayReport report = handleEvent(newCreateEvent("income_id2", false));
         assertThat(report.getIncomes(), hasSize(1));
@@ -91,7 +94,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
     }
 
     @Test
-    public void testDeleteEventForIncomeTransaction() throws Exception {
+    public void testDeleteEventForIncomeTransaction() {
         mockInitialReport("income_id", "expense_id");
         DayReport report = handleEvent(newDeleteEvent("income_id", true));
         assertThat(report.getIncomes(), hasSize(0));
@@ -102,7 +105,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
     }
 
     @Test
-    public void testDeleteEventForExpenseTransaction() throws Exception {
+    public void testDeleteEventForExpenseTransaction() {
         mockInitialReport("income_id", "expense_id");
         DayReport report = handleEvent(newDeleteEvent("expense_id", false));
         assertThat(report.getIncomes(), hasSize(1));
@@ -113,7 +116,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
     }
 
     @Test
-    public void testDeleteEventNoInitialReport() throws Exception {
+    public void testDeleteEventNoInitialReport() {
         mockInitialReportNoTransactions();
         DayReport report = handleEvent(newDeleteEvent("some_id", false));
         assertThat(report.getIncomes(), hasSize(0));
@@ -124,7 +127,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
     }
 
     @Test
-    public void testModifyEventForIncomeTransaction() throws Exception {
+    public void testModifyEventForIncomeTransaction() {
         mockInitialReport("income_id", "expense_id");
         DayReport report = handleEvent(newModifyEvent("income_id", true));
         assertThat(report.getIncomes(), hasSize(1));
@@ -135,7 +138,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
     }
 
     @Test
-    public void testModifyEventForExpenseTransaction() throws Exception {
+    public void testModifyEventForExpenseTransaction() {
         mockInitialReport("income_id", "expense_id");
         DayReport report = handleEvent(newModifyEvent("expense_id", false));
         assertThat(report.getIncomes(), hasSize(1));
@@ -153,9 +156,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         Mockito.verify(dayReportDao, atLeast(1)).save(requestCaptor.capture());
         DayReport report = requestCaptor.getValue();
         assertThat(report, notNullValue());
-        assertThat(report.getDate().getDay(), is(1));
-        assertThat(report.getDate().getMonth(), is(12));
-        assertThat(report.getDate().getYear(), is(2000));
+        assertThat(report.getDate(), is(TEST_DATE));
 
         return report;
     }
@@ -168,22 +169,22 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         expenses.add(new ReportTransaction(expenseTransactionId, FIVE, "abc"));
 
         DayReport initialReport = new DayReport();
-        initialReport.setDate(new ReportDate(2000, 12, 1));
+        initialReport.setDate(TEST_DATE);
         initialReport.setIncomes(incomes);
         initialReport.setExpenses(expenses);
         initialReport.setStats(new ReportStats(FIVE, TEN, FIVE));
-        Mockito.when(reportService.getDayReport(eq(2000), eq(12), eq(1)))
+        Mockito.when(reportService.getDayReportOrCreate(eq(TEST_DATE)))
                 .thenReturn(initialReport);
     }
 
     private void mockInitialReportNoTransactions() {
         DayReport emptyReport = new DayReport();
-        emptyReport.setDate(new ReportDate(2000, 12, 1));
+        emptyReport.setDate(TEST_DATE);
         emptyReport.setExpenses(new ArrayList<>());
         emptyReport.setIncomes(new ArrayList<>());
         emptyReport.setStats(new ReportStats(ZERO, ZERO, ZERO));
-        Mockito.when(reportService.getDayReport(eq(2000), eq(12), eq(1)))
-                .thenReturn(emptyReport);
+        Mockito.when(reportService.getDayReportOrCreate(eq(TEST_DATE)))
+                .thenReturn(DayReport.emptyReport(TEST_DATE));
     }
 
     private static Event newCreateEvent(String transactionId, boolean isIncome) {
@@ -194,7 +195,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
                 .setTransactionData(EventData.newBuilder()
                         .setAmount("1")
                         .setCategory("abc")
-                        .setDate("01/12/2000"))
+                        .setDate(TEST_DATE_FORMATTED))
                 .build();
     }
 
@@ -205,7 +206,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
                 .setTransactionType(isIncome)
                 .setTransactionData(EventData.newBuilder()
                         .setCategory("abc")
-                        .setDate("01/12/2000"))
+                        .setDate(TEST_DATE_FORMATTED))
                 .build();
     }
 
@@ -217,10 +218,10 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
                 .setTransactionData(EventData.newBuilder()
                         .setAmount("20")
                         .setCategory("abc")
-                        .setDate("01/12/2000"))
+                        .setDate(TEST_DATE_FORMATTED))
                 .setOldTransactionData(EventData.newBuilder()
                         .setCategory("xyz")
-                        .setDate("01/12/2000"))
+                        .setDate(TEST_DATE_FORMATTED))
                 .build();
     }
 

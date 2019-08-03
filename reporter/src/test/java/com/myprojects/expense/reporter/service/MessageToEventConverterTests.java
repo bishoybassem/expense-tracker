@@ -18,7 +18,7 @@ public class MessageToEventConverterTests {
     private static final MessageToEventConverter CONVERTER = new MessageToEventConverter();
 
     @Test
-    public void testFromMessage() throws Exception {
+    public void testFromMessage() {
         Message message = new Message(Event.newBuilder()
                 .setType(EventType.CREATE)
                 .setTransactionId(UUID.randomUUID().toString())
@@ -31,12 +31,12 @@ public class MessageToEventConverterTests {
     }
 
     @Test(expectedExceptions = MessageConversionException.class)
-    public void testFromMessageWithInvalidMessage() throws Exception {
+    public void testFromMessageWithInvalidMessage() {
         CONVERTER.fromMessage(new Message(new byte[]{1, 2, 3}, null));
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
-    public void testCreateMessageDoesNothing() throws Exception {
+    public void testCreateMessageDoesNothing() {
         CONVERTER.createMessage(null, null);
     }
 }

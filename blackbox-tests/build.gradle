@@ -37,6 +37,6 @@ test {
     outputs.upToDateWhen { false }
 
     dependsOn ':composeUp'
-    finalizedBy stopAndCopyCoverage, ':composeDown'
+    finalizedBy stopAndCopyCoverage, ':composeLogs', ':composeDown'
     mustRunAfter ':tracker:test', ':reporter:test'
 }
