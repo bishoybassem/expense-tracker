@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = ReportController.PATH)
 public class ReportController {
 
-    public static final String PATH = "/reports";
+    public static final String PATH = "/v1/reports";
 
     private final ReportService reportService;
 

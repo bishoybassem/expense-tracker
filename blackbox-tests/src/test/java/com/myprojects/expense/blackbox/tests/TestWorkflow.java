@@ -17,8 +17,8 @@ import static org.hamcrest.Matchers.*;
 
 public class TestWorkflow {
 
-    private static final String TRANSACTIONS_URL = "http://localhost:8080/tracker/transactions";
-    private static final String REPORTS_URL = "http://localhost:8081/reporter/reports";
+    private static final String TRANSACTIONS_URL = "http://localhost:8080/v1/transactions";
+    private static final String REPORTS_URL = "http://localhost:8080/v1/reports";
     private static final LocalDate TEST_DATE = LocalDate.now();
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 

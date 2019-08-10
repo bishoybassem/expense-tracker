@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequestMapping(TransactionController.PATH)
 public class TransactionController {
 
-    public static final String PATH = "/transactions";
+    public static final String PATH = "/v1/transactions";
 
     @Autowired
     private TransactionService transactionService;

@@ -7,8 +7,6 @@ services:
       args:
         TRACKER_JAR: build/libs/tracker.jar
         JACOCO_AGENT_JAR: build/libs/jacocoagent.jar
-    ports:
-      - 8080:8080
     depends_on:
       - tracker-db
       - mq
@@ -27,8 +25,6 @@ services:
       args:
         REPORTER_JAR: build/libs/reporter.jar
         JACOCO_AGENT_JAR: build/libs/jacocoagent.jar
-    ports:
-      - 8081:8080
     depends_on:
       - reporter-db
       - mq
@@ -41,3 +37,12 @@ services:
     image: rabbitmq:3.7.16-alpine
     ports:
       - 5673:5672
+  nginx:
+    image: nginx:1.17.2-alpine
+    ports:
+      - 8080:80
+    volumes:
+      - ./nginx-config:/etc/nginx/conf.d
+    depends_on:
+      - reporter
+      - tracker

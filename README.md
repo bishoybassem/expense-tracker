@@ -17,7 +17,11 @@ This project implements a web application for tracking expenses, where users wou
 * An automatic code scan (static analysis) triggered by [Codacy](https://app.codacy.com/project/bishoybassem/expense-tracker/dashboard).
 
 ## Implementation
-The project consists of the following modules:
+
+The application's architecture is shown in the bellow diagram, in addition to brief descriptions for the webapps and Gradle modules within this project:
+
+<img align="right" width="400" src="diagram.svg"/>
+
 * __tracker__: a microservice implemented with Spring Boot that has the following responsibilities:
   * Offers CRUD API for managing the transactions (expenses/incomes).
   * Persists the transaction data to a PostgreSQL database.
@@ -47,10 +51,11 @@ To test the setup locally, the following needs to be present/installed:
    ```
 3. Create a transaction (tracker listens on port 8080)
    ```bash
-   curl -X POST http://localhost:8080/tracker/transactions -d '{"type": "EXPENSE","amount": "1.23","category": "abc","date": "2017/03/20","comment": "comment"}' -H 'Content-Type: application/json'
+   curl -X POST http://localhost:8080/v1/transactions -H 'Content-Type: application/json' \
+     -d '{"type": "EXPENSE","amount": "1.23","category": "abc","date": "2017/03/20","comment": "comment"}'
    ```
 
 4. Query the report (reporter listens on port 8081)
    ```bash
-   curl http://localhost:8081/reporter/reports/2017/03/20
+   curl http://localhost:8080/v1/reports/2017/03/20
    ```
