@@ -20,7 +20,7 @@ This project implements a web application for tracking expenses, where users wou
 
 The application's architecture is shown in the bellow diagram, in addition to brief descriptions for the webapps and Gradle modules within this project:
 
-<img align="right" width="400" src="diagram.svg"/>
+<img align="right" width="275" src="diagram.svg"/>
 
 * __tracker__: a microservice implemented with Spring Boot that has the following responsibilities:
   * Offers CRUD API for managing the transactions (expenses/incomes).

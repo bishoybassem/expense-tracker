@@ -10,6 +10,8 @@ import com.myprojects.expense.tracker.model.Transaction;
 import com.myprojects.expense.tracker.model.request.CreateTransactionRequest;
 import com.myprojects.expense.tracker.model.request.UpdateTransactionRequest;
 import com.myprojects.expense.tracker.model.response.TransactionResponse;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 @Service
 public class DefaultTransactionService implements TransactionService {
 
+    private static final Log LOGGER = LogFactory.getLog(DefaultTransactionService.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final TransactionDao transactionDao;
@@ -32,12 +35,19 @@ public class DefaultTransactionService implements TransactionService {
         this.rabbitTemplate = rabbitTemplate;
     }
 
+    /**
+     * Queries the transactions by the given id and returns one, If none found, it throws
+     * a {@link TransactionNotFoundException}.
+     */
     @Override
     public TransactionResponse get(UUID id) {
         Transaction transaction = getTransaction(id);
         return createResponse(transaction);
     }
 
+    /**
+     * Queries and returns all transactions.
+     */
     @Override
     public List<TransactionResponse> getAll() {
         return Streams.stream(transactionDao.findAll())
@@ -45,16 +55,24 @@ public class DefaultTransactionService implements TransactionService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Deletes a transaction by id, then posts a transaction deletion event to the message queue, and returns the
+     * deleted transaction's details.
+     */
     @Override
     public TransactionResponse delete(UUID id) {
         Transaction transaction = getTransaction(id);
         transactionDao.delete(transaction);
 
-        rabbitTemplate.convertAndSend(createEvent(EventType.DELETE, transaction, null));
+        sendEvent(createEvent(EventType.DELETE, transaction, null));
 
         return createResponse(transaction);
     }
 
+    /**
+     * Creates a new transaction based on the given {@link CreateTransactionRequest}, then posts a transaction
+     * creation event to the message queue, and returns the created transaction's details.
+     */
     @Override
     public TransactionResponse create(CreateTransactionRequest request) {
         Transaction transaction = new Transaction();
@@ -65,11 +83,16 @@ public class DefaultTransactionService implements TransactionService {
         transaction.setComment(request.getComment());
         transaction = transactionDao.save(transaction);
 
-        rabbitTemplate.convertAndSend(createEvent(EventType.CREATE, transaction, null));
+        sendEvent(createEvent(EventType.CREATE, transaction, null));
 
         return createResponse(transaction);
     }
 
+    /**
+     * Modifies an existing transaction based on the given id and the {@link UpdateTransactionRequest}, then posts a
+     * transaction modification event to the message queue, and returns the modified transaction's details.
+     * If the transaction does not exist, it throws a {@link TransactionNotFoundException}.
+     */
     @Override
     public TransactionResponse update(UUID id, UpdateTransactionRequest request) {
         Transaction transaction = getTransaction(id);
@@ -82,7 +105,7 @@ public class DefaultTransactionService implements TransactionService {
         transaction.setComment(request.getComment());
         transaction = transactionDao.save(transaction);
 
-        rabbitTemplate.convertAndSend(createEvent(EventType.MODIFY, transaction, oldTransactionData));
+        sendEvent(createEvent(EventType.MODIFY, transaction, oldTransactionData));
 
         return createResponse(transaction);
     }
@@ -90,9 +113,15 @@ public class DefaultTransactionService implements TransactionService {
     private Transaction getTransaction(UUID id) {
         Optional<Transaction> transaction = transactionDao.findById(id);
         if (!transaction.isPresent()) {
+            LOGGER.info("Transaction with id " + id + " is not found!");
             throw new TransactionNotFoundException();
         }
         return transaction.get();
+    }
+
+    private void sendEvent(Event event) {
+        LOGGER.info("Sending the following event to the message queue:\n" + event.toString());
+        rabbitTemplate.convertAndSend(event);
     }
 
     private static TransactionResponse createResponse(Transaction transaction) {

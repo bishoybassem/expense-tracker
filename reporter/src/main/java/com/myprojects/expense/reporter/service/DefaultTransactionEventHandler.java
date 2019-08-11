@@ -5,6 +5,8 @@ import com.myprojects.expense.reporter.dao.DayReportDao;
 import com.myprojects.expense.reporter.model.DayReport;
 import com.myprojects.expense.reporter.model.ReportStats;
 import com.myprojects.expense.reporter.model.ReportTransaction;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,7 @@ import java.util.Optional;
 @Service
 public class DefaultTransactionEventHandler implements TransactionEventHandler {
 
+    private static final Log LOGGER = LogFactory.getLog(DefaultTransactionEventHandler.class);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final DayReportDao dayReportDao;
@@ -27,9 +30,19 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
         this.reportService = reportService;
     }
 
+    /**
+     * Invoked when a message containing an {@link EventProtos.Event} is consumed from the message queue.
+     * Given an event, this method queries the report with the corresponding date, delegates the update logic to
+     * {@link #handleCreateEvent(EventProtos.Event, DayReport)} and
+     * {@link #handleDeleteEvent(EventProtos.Event, DayReport)} methods, and finally saves the result to the database.
+     * Moreover, the updates to the reports are synchronized among other threads or reporter instances using
+     * optimistic locking, and this method would take care of retrying the update logic in case of concurrent
+     * modifications done to the same report.
+     */
     @Override
     public void handleTransactionEvent(EventProtos.Event event) {
         retryInCaseOfOptimisticLockingFailure(() -> {
+            LOGGER.info("Handling the following event:\n" + event.toString());
             DayReport dayReport = getDayReport(event.getTransactionData().getDate());
             if (event.getType() == EventProtos.EventType.CREATE) {
                 handleCreateEvent(event, dayReport);
@@ -43,6 +56,10 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
         });
     }
 
+    /**
+     * Given a transaction creation event and the corresponding day report, this method adds the new transaction to
+     * the report and updates the report's stats accordingly.
+     */
     private void handleCreateEvent(EventProtos.Event event, DayReport dayReport) {
         ReportTransaction transaction = new ReportTransaction();
         transaction.setId(event.getTransactionId());
@@ -59,6 +76,10 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
         updateTotal(dayReport.getStats());
     }
 
+    /**
+     * Given a transaction deletion event and the corresponding day report, this method deletes the transaction from
+     * the report and updates the report's stats accordingly.
+     */
     private void handleDeleteEvent(EventProtos.Event event, DayReport dayReport) {
         ReportStats stats = dayReport.getStats();
         if (event.getTransactionType()) {
@@ -101,7 +122,7 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
                 logic.run();
                 failed = false;
             } catch (OptimisticLockingFailureException ex) {
-                // The report was modified by another process/thread
+                // The report was modified by another thread/reporter instance
             }
         } while (failed);
     }
