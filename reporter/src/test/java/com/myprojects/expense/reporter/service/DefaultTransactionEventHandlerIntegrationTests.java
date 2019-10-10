@@ -56,7 +56,7 @@ public class DefaultTransactionEventHandlerIntegrationTests extends AbstractTest
             transactionEventHandler.handleTransactionEvent(newCreateEvent());
             return null;
         };
-        List<Future<Void>> results = threadPoolExecutor.invokeAll(Collections.nCopies(events, callable), 5000, TimeUnit.MILLISECONDS);
+        List<Future<Void>> results = threadPoolExecutor.invokeAll(Collections.nCopies(events, callable));
         for(Future<Void> result : results) {
             result.get();
         }
