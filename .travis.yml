@@ -9,7 +9,7 @@ jdk:
 - oraclejdk11
 
 env:
-  - DOCKER_COMPOSE_VERSION=1.24.1
+  - DOCKER_COMPOSE_VERSION=1.25.0
 
 before_install:
   - sudo rm /usr/local/bin/docker-compose

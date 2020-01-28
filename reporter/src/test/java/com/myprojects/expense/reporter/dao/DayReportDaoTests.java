@@ -20,7 +20,9 @@ import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.ZERO;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 
 @DataMongoTest
 @ContextConfiguration(classes = ReporterDatabaseConfig.class)
@@ -40,7 +42,7 @@ public class DayReportDaoTests extends AbstractTestNGSpringContextTests {
     public void testCreate() {
         String createdReportId = createReport();
 
-        assertThat(createdReportId, not(isEmptyString()));
+        assertThat(createdReportId, not(emptyString()));
     }
 
     @Test

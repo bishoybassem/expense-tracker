@@ -39,9 +39,9 @@ The application's architecture is shown in the bellow diagram, in addition to br
 
 ## Requirements
 To test the setup locally, the following needs to be present/installed:
-* JDK (used OpenJDK version 11.0.4).
-* Docker (used version 18.09.0-ce).
-* Docker Compose (used version 1.23.2).
+* JDK (used OpenJDK version 11.0.2).
+* Docker (used version 19.03.5-ce).
+* Docker Compose (used version 1.25.0).
 
 ## Steps
 1. Clone the repository, and navigate to the clone directory.

@@ -1,13 +1,12 @@
 package com.myprojects.expense.tracker.model;
 
-import com.myprojects.expense.tracker.dao.LocalDateJpaConverter;
 import com.myprojects.expense.tracker.dao.TransactionTypeJpaConverter;
-import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import java.math.BigDecimal;
@@ -19,8 +18,7 @@ import java.util.UUID;
 public class Transaction {
 
     @Id
-    @GeneratedValue(generator = "uuid-generator")
-    @GenericGenerator(name = "uuid-generator", strategy = "org.hibernate.id.UUIDGenerator")
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @Column(name = "transaction_type")
@@ -34,7 +32,6 @@ public class Transaction {
     private String category;
 
     @Column(name = "transaction_date")
-    @Convert(converter = LocalDateJpaConverter.class)
     private LocalDate date;
 
     @Column

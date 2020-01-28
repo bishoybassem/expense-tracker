@@ -1,18 +1,19 @@
 plugins {
-    id "com.avast.gradle.docker-compose" version "0.9.4"
-    id "com.palantir.jacoco-full-report" version "0.4.0"
+    id 'idea'
+    id 'jacoco'
+    id 'com.avast.gradle.docker-compose' version '0.10.7'
 }
 
 allprojects {
-    apply plugin: 'idea'
-
     repositories {
         mavenCentral()
     }
 }
 
+def webappModules = ["tracker", "reporter"]
+
 subprojects {
-    if (project.name == 'tracker' || project.name == 'reporter') {
+    if (project.name in webappModules) {
         apply plugin: 'java'
         apply plugin: 'jacoco'
 
@@ -65,8 +66,11 @@ dependencies {
     codacy 'com.codacy:codacy-coverage-reporter:+'
 }
 
-jacocoFullReport {
-    executionData(fileTree(".").matching { include "**/*.exec" })
+task jacocoFullReport(type: JacocoReport) {
+    classDirectories.from = webappModules.collect { project(it).sourceSets.main.java.outputDir }
+    sourceDirectories.from = webappModules.collect { project(it).sourceSets.main.java.srcDirs }
+    executionData.from = fileTree(".").matching { include "**/*.exec" }
+    reports.xml.enabled true
 }
 
 task sendCoverageToCodacy(type: JavaExec) {
@@ -77,13 +81,10 @@ task sendCoverageToCodacy(type: JavaExec) {
 }
 
 dockerCompose {
-    upAdditionalArgs = ['--renew-anon-volumes']
     forceRecreate = true
-    projectName = "expense-tracker"
+    projectName = name
     services {
         startedServices = ['tracker-db', 'reporter-db', 'mq']
-        upAdditionalArgs = ['--renew-anon-volumes']
-        forceRecreate = true
-        projectName = "expense-tracker"
+        projectName = name
     }
 }

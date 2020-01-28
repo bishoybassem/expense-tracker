@@ -1,12 +1,12 @@
 plugins {
-    id 'com.google.protobuf' version '0.8.10'
-    id 'java'
+    id 'java-library'
+    id 'com.google.protobuf' version '0.8.11'
 }
 
-def protobufVersion = '3.9.0'
+def protobufVersion = '3.11.1'
 
 dependencies {
-    compile "com.google.protobuf:protobuf-java:$protobufVersion"
+    api "com.google.protobuf:protobuf-java:$protobufVersion"
 }
 
 protobuf {

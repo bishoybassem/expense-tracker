@@ -11,9 +11,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.delete;
+import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 
 public class TestWorkflow {
 

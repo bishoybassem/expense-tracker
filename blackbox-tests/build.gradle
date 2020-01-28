@@ -1,16 +1,18 @@
-apply plugin: 'java'
+plugins {
+    id 'java-library'
+}
 
 dependencies {
-    testCompile 'org.testng:testng:6.14.3'
-    testCompile 'io.rest-assured:rest-assured:4.0.0'
-    testCompile 'org.awaitility:awaitility:3.1.6'
+    testImplementation 'org.testng:testng:7.1.0'
+    testImplementation 'io.rest-assured:rest-assured:4.2.0'
+    testImplementation 'org.awaitility:awaitility:4.0.2'
 }
 
 task stopAndCopyCoverage {
     doLast {
         exec {
             workingDir rootDir
-            commandLine 'docker-compose', 'stop'
+            commandLine 'docker-compose', '-p', rootProject.name, 'stop'
         }
         mkdir project.buildDir
         def trackerContainerId = dockerCompose.servicesInfos.tracker.firstContainer.containerId

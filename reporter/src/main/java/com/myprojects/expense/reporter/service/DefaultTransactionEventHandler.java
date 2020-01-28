@@ -116,14 +116,13 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
     }
 
     private static void retryInCaseOfOptimisticLockingFailure(Runnable logic) {
-        boolean failed = true;
-        do {
+        while (true) {
             try {
                 logic.run();
-                failed = false;
+                break;
             } catch (OptimisticLockingFailureException ex) {
                 // The report was modified by another thread/reporter instance
             }
-        } while (failed);
+        }
     }
 }

@@ -23,7 +23,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @ContextConfiguration(classes = TrackerDatabaseConfig.class)
-public class TransactionDaoTests extends AbstractTestNGSpringContextTests {
+public class TransactionDaoIntegrationTests extends AbstractTestNGSpringContextTests {
 
     @Autowired
     private TransactionDao dao;
@@ -56,7 +56,7 @@ public class TransactionDaoTests extends AbstractTestNGSpringContextTests {
         assertThat(transaction.getComment(), is("comment"));
     }
 
-    @Test(dependsOnMethods = {"testCreate", "testFind"})
+    @Test(dependsOnMethods = "testFind")
     public void testUpdate() throws Exception {
         Transaction transaction = dao.findById(createdTransactionId).get();
         transaction.setType(TransactionType.INCOME);
@@ -71,7 +71,7 @@ public class TransactionDaoTests extends AbstractTestNGSpringContextTests {
         assertThat(transaction.getComment(), is("comment"));
     }
 
-    @Test(dependsOnMethods = {"testCreate", "testFind", "testUpdate"})
+    @Test(dependsOnMethods = "testUpdate")
     public void testDelete() throws Exception {
         dao.deleteById(createdTransactionId);
 
