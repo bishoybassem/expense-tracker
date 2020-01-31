@@ -7,6 +7,7 @@ import com.myprojects.expense.messages.EventProtos.EventType;
 import com.myprojects.expense.tracker.dao.TransactionDao;
 import com.myprojects.expense.tracker.exception.TransactionNotFoundException;
 import com.myprojects.expense.tracker.model.Transaction;
+import com.myprojects.expense.tracker.model.TransactionType;
 import com.myprojects.expense.tracker.model.request.CreateTransactionRequest;
 import com.myprojects.expense.tracker.model.request.UpdateTransactionRequest;
 import com.myprojects.expense.tracker.model.response.TransactionResponse;
@@ -60,13 +61,11 @@ public class DefaultTransactionService implements TransactionService {
      * deleted transaction's details.
      */
     @Override
-    public TransactionResponse delete(UUID id) {
+    public void delete(UUID id) {
         Transaction transaction = getTransaction(id);
         transactionDao.delete(transaction);
 
         sendEvent(createEvent(EventType.DELETE, transaction, null));
-
-        return createResponse(transaction);
     }
 
     /**
@@ -76,7 +75,7 @@ public class DefaultTransactionService implements TransactionService {
     @Override
     public TransactionResponse create(CreateTransactionRequest request) {
         Transaction transaction = new Transaction();
-        transaction.setType(request.getType());
+        transaction.setType(TransactionType.valueOf(request.getType()));
         transaction.setAmount(request.getAmount());
         transaction.setCategory(request.getCategory());
         transaction.setDate(request.getDate());
@@ -114,7 +113,7 @@ public class DefaultTransactionService implements TransactionService {
         Optional<Transaction> transaction = transactionDao.findById(id);
         if (!transaction.isPresent()) {
             LOGGER.info("Transaction with id " + id + " is not found!");
-            throw new TransactionNotFoundException();
+            throw new TransactionNotFoundException(id);
         }
         return transaction.get();
     }

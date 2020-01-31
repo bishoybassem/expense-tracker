@@ -2,15 +2,23 @@ package com.myprojects.expense.tracker.model.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class UpdateTransactionRequest {
 
+    @NotNull
     private BigDecimal amount;
+
+    @Size(max = 30)
     private String category;
+
+    @NotNull
     @JsonFormat(pattern = "yyyy/MM/dd")
     private LocalDate date;
+
     private String comment;
 
     public BigDecimal getAmount() {

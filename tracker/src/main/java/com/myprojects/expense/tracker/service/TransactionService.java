@@ -13,7 +13,7 @@ public interface TransactionService {
 
     List<TransactionResponse> getAll();
 
-    TransactionResponse delete(UUID id);
+    void delete(UUID id);
 
     TransactionResponse create(CreateTransactionRequest request);
 

@@ -20,7 +20,7 @@ import org.springframework.boot.test.mock.mockito.MockitoTestExecutionListener;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
-import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
@@ -53,35 +53,35 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
     @Autowired
     private TransactionService transactionService;
 
-    @AfterMethod
-    public void resetMocks() throws Exception {
+    @BeforeMethod
+    public void resetMocks() {
         Mockito.reset(mockTransactionDao);
         Mockito.reset(mockRabbitTemplate);
     }
 
     @Test(expectedExceptions = TransactionNotFoundException.class)
-    public void testGetNonExistentThrowsException() throws Exception {
+    public void testGetNonExistentThrowsException() {
         when(mockTransactionDao.findById(any())).thenReturn(Optional.empty());
 
         transactionService.get(randomUUID());
     }
 
     @Test(expectedExceptions = TransactionNotFoundException.class)
-    public void testUpdateNonExistentThrowsException() throws Exception {
+    public void testUpdateNonExistentThrowsException() {
         when(mockTransactionDao.findById(any())).thenReturn(Optional.empty());
 
         transactionService.update(randomUUID(), new UpdateTransactionRequest());
     }
 
     @Test(expectedExceptions = TransactionNotFoundException.class)
-    public void testDeleteNonExistentThrowsException() throws Exception {
+    public void testDeleteNonExistentThrowsException() {
         when(mockTransactionDao.findById(any())).thenReturn(Optional.empty());
 
         transactionService.delete(randomUUID());
     }
 
     @Test
-    public void testGet() throws Exception {
+    public void testGet() {
         Transaction transaction = createTestTransaction();
         when(mockTransactionDao.findById(transaction.getId())).thenReturn(Optional.of(transaction));
 
@@ -90,7 +90,7 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
     }
 
     @Test
-    public void testGetAll() throws Exception {
+    public void testGetAll() {
         Transaction transaction1 = createTestTransaction();
         Transaction transaction2 = createTestTransaction();
         when(mockTransactionDao.findAll()).thenReturn(Arrays.asList(transaction1, transaction2));
@@ -102,7 +102,7 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
     }
 
     @Test
-    public void testCreatePassesAllFieldsCorrectly() throws Exception {
+    public void testCreatePassesAllFieldsCorrectly() {
         final UUID transactionId = randomUUID();
         when(mockTransactionDao.save(any(Transaction.class))).thenAnswer(invocation -> {
             Transaction transaction = invocation.getArgument(0);
@@ -111,7 +111,7 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
         });
 
         CreateTransactionRequest request = new CreateTransactionRequest();
-        request.setType(TransactionType.EXPENSE);
+        request.setType(TransactionType.EXPENSE.toString());
         request.setAmount(new BigDecimal("1.23"));
         request.setCategory("abc");
         request.setDate(LocalDate.of(2018, Month.FEBRUARY, 13));
@@ -129,7 +129,7 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
     }
 
     @Test
-    public void testUpdatePassesAllFieldsCorrectly() throws Exception {
+    public void testUpdatePassesAllFieldsCorrectly() {
         Transaction transaction = createTestTransaction();
         when(mockTransactionDao.findById(transaction.getId())).thenReturn(Optional.of(transaction));
         when(mockTransactionDao.save(any(Transaction.class))).thenAnswer(returnsFirstArg());
@@ -160,12 +160,11 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
     }
 
     @Test
-    public void testDeleteSendsEventCorrectly() throws Exception {
+    public void testDeleteSendsEventCorrectly() {
         Transaction transaction = createTestTransaction();
         when(mockTransactionDao.findById(transaction.getId())).thenReturn(Optional.of(transaction));
 
-        TransactionResponse response = transactionService.delete(transaction.getId());
-        assertTransactionResponse(response, transaction.getId());
+        transactionService.delete(transaction.getId());
 
         ArgumentCaptor<Event> requestCaptor = ArgumentCaptor.forClass(Event.class);
         Mockito.verify(mockRabbitTemplate).convertAndSend(requestCaptor.capture());

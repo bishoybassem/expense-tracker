@@ -56,7 +56,7 @@ public class TestWorkflow {
         allIds.forEach(id -> delete(TRANSACTIONS_URL + "/" + id)
                 .then()
                 .log().all()
-                .statusCode(200));
+                .statusCode(204));
 
         await().until(() -> getReport(date)
                 .jsonPath()
@@ -76,7 +76,7 @@ public class TestWorkflow {
                 .post(TRANSACTIONS_URL)
                 .then()
                 .log().all()
-                .statusCode(200)
+                .statusCode(201)
                 .contentType(ContentType.JSON)
                 .body("id", not(emptyString()));
     }
