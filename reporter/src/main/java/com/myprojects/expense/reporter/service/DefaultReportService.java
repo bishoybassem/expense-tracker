@@ -27,7 +27,7 @@ public class DefaultReportService implements ReportService {
         DayReport dayReportProbe = new DayReport();
         dayReportProbe.setDate(date);
         return dayReportDao.findOne(Example.of(dayReportProbe))
-                .orElseThrow(() -> new ReportNotFoundException());
+                .orElseThrow(() -> new ReportNotFoundException(date));
     }
 
     /**

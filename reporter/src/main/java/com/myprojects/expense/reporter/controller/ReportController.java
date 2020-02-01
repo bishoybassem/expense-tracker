@@ -1,6 +1,6 @@
 package com.myprojects.expense.reporter.controller;
 
-import com.myprojects.expense.reporter.model.DayReport;
+import com.myprojects.expense.reporter.model.response.DayReportResponse;
 import com.myprojects.expense.reporter.service.ReportService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,7 +20,8 @@ public class ReportController {
     }
 
     @GetMapping(path = "/{year}/{month}/{day}")
-    public DayReport getDayReport(@PathVariable Integer year, @PathVariable Integer month, @PathVariable Integer day) {
+    public DayReportResponse getDayReport(@PathVariable Integer year, @PathVariable Integer month,
+                                          @PathVariable Integer day) {
         return reportService.getDayReport(year, month, day);
     }
 
