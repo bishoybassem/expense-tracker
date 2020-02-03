@@ -17,13 +17,11 @@ task stopAndCopyCoverage {
             commandLine 'docker-compose', '-p', rootProject.name, 'stop'
         }
         mkdir project.buildDir
-        def trackerContainerId = dockerCompose.servicesInfos.tracker.firstContainer.containerId
-        def reporterContainerId = dockerCompose.servicesInfos.reporter.firstContainer.containerId
-        exec {
-            commandLine 'docker', 'cp',  "$trackerContainerId:/webapp/tracker.exec", project.buildDir
-        }
-        exec {
-            commandLine 'docker', 'cp', "$reporterContainerId:/webapp/reporter.exec", project.buildDir
+        ['tracker', 'reporter', 'authenticator'].each { webapp ->
+            def containerId = dockerCompose.servicesInfos."$webapp".firstContainer.containerId
+            exec {
+                commandLine 'docker', 'cp',  "$containerId:/webapp/${webapp}.exec", project.buildDir
+            }
         }
     }
 }

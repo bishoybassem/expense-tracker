@@ -31,7 +31,7 @@ public class TransactionDaoIntegrationTests extends AbstractTestNGSpringContextT
     private UUID createdTransactionId;
 
     @Test
-    public void testCreate() throws Exception {
+    public void testCreate() {
         Transaction transaction = new Transaction();
         transaction.setType(TransactionType.EXPENSE);
         transaction.setAmount(new BigDecimal("1.23"));
@@ -46,7 +46,7 @@ public class TransactionDaoIntegrationTests extends AbstractTestNGSpringContextT
     }
 
     @Test(dependsOnMethods = "testCreate")
-    public void testFind() throws Exception {
+    public void testFind() {
         Transaction transaction = dao.findById(createdTransactionId).get();
 
         assertThat(transaction.getType(), is(TransactionType.EXPENSE));
@@ -57,7 +57,7 @@ public class TransactionDaoIntegrationTests extends AbstractTestNGSpringContextT
     }
 
     @Test(dependsOnMethods = "testFind")
-    public void testUpdate() throws Exception {
+    public void testUpdate() {
         Transaction transaction = dao.findById(createdTransactionId).get();
         transaction.setType(TransactionType.INCOME);
         transaction.setDate(LocalDate.of(1992, Month.MARCH, 9));
@@ -72,7 +72,7 @@ public class TransactionDaoIntegrationTests extends AbstractTestNGSpringContextT
     }
 
     @Test(dependsOnMethods = "testUpdate")
-    public void testDelete() throws Exception {
+    public void testDelete() {
         dao.deleteById(createdTransactionId);
 
         assertThat(dao.findById(createdTransactionId).isPresent(), is(false));

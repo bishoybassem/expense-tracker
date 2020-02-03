@@ -10,7 +10,7 @@ allprojects {
     }
 }
 
-def webappModules = ["tracker", "reporter"]
+def webappModules = ['tracker', 'reporter', 'authenticator']
 
 subprojects {
     if (project.name in webappModules) {
@@ -86,7 +86,7 @@ dockerCompose {
     forceRecreate = true
     projectName = name
     services {
-        startedServices = ['tracker-db', 'reporter-db', 'mq']
+        startedServices = ['authenticator-db', 'tracker-db', 'reporter-db', 'mq']
         projectName = name
     }
 }

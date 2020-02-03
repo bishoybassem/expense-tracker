@@ -1,0 +1,19 @@
+plugins {
+    id 'org.springframework.boot' version '2.2.2.RELEASE'
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.passay:passay:1.0'
+
+    runtimeOnly 'org.postgresql:postgresql:42.2.9'
+
+    testImplementation 'org.testng:testng:7.1.0'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

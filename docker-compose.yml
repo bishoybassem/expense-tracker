@@ -1,5 +1,22 @@
 version: "3.7"
 services:
+  authenticator:
+    image: authenticator
+    build:
+      context: authenticator
+      args:
+        AUTHENTICATOR_JAR: build/libs/authenticator.jar
+        JACOCO_AGENT_JAR: build/libs/jacocoagent.jar
+    depends_on:
+      - authenticator-db
+    command: ["authenticator-db:5432"]
+  authenticator-db:
+    image: postgres:12.1-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: authenticator
+    ports:
+      - 5434:5432
   tracker:
     image: tracker
     build:
