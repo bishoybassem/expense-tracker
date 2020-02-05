@@ -6,19 +6,11 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
-public class SignUpRequest {
+public class SignUpRequest extends LoginRequest {
 
     @NotNull
     @Size(min = 1, max = 255)
     private String name;
-
-    @NotNull
-    @Email
-    private String email;
-
-    @NotNull
-    @ValidPassword
-    private String password;
 
     public String getName() {
         return name;
@@ -28,19 +20,16 @@ public class SignUpRequest {
         this.name = name;
     }
 
+    @Override
+    @Email
     public String getEmail() {
-        return email;
+        return super.getEmail();
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
+    @Override
+    @ValidPassword
     public String getPassword() {
-        return password;
+        return super.getPassword();
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
 }

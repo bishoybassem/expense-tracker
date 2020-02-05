@@ -21,11 +21,6 @@ public class PasswordConstraintValidator implements ConstraintValidator<ValidPas
             new DigitCharacterRule(1)));
 
     @Override
-    public void initialize(ValidPassword constraintAnnotation) {
-
-    }
-
-    @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
         RuleResult result = PASSWORD_VALIDATOR.validate(new PasswordData(value));
         if (result.isValid()) {

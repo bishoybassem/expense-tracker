@@ -22,6 +22,9 @@ public class DefaultAppUserServiceTests extends AbstractTestNGSpringContextTests
     @MockBean
     private AppUserDao userDao;
 
+    @MockBean
+    private AccessTokenService accessTokenService;
+
     @Autowired
     private DefaultAppUserService userService;
 

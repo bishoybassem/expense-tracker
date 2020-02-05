@@ -1,8 +1,8 @@
 package com.myprojects.expense.authenticator.controller;
 
-import com.myprojects.expense.authenticator.model.request.SignUpRequest;
+import com.myprojects.expense.authenticator.model.request.LoginRequest;
 import com.myprojects.expense.authenticator.model.response.LoginResponse;
-import com.myprojects.expense.authenticator.service.AppUserService;
+import com.myprojects.expense.authenticator.service.AccessTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,19 +13,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 
-@RestController
-@RequestMapping(AppUserController.PATH)
-public class AppUserController {
+import static com.myprojects.expense.authenticator.controller.AccessTokenController.PATH;
 
-    public static final String PATH = "/v1/users";
+@RestController
+@RequestMapping(PATH)
+public class AccessTokenController {
+
+    public static final String PATH = "/v1/access-tokens";
 
     @Autowired
-    private AppUserService appUserService;
+    private AccessTokenService accessTokenService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public LoginResponse signUp(@Valid @RequestBody SignUpRequest request) {
-        return appUserService.signUp(request);
+    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+        return accessTokenService.login(request);
     }
 
 }

@@ -11,6 +11,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.passay:passay:1.0'
+    implementation 'com.auth0:java-jwt:3.9.0'
 
     runtimeOnly 'org.postgresql:postgresql:42.2.9'
 

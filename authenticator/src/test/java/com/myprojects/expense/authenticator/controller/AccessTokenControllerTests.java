@@ -1,10 +1,9 @@
 package com.myprojects.expense.authenticator.controller;
 
 import com.google.common.util.concurrent.Runnables;
-import com.myprojects.expense.authenticator.exception.EmailAlreadyUsedException;
-import com.myprojects.expense.authenticator.model.request.SignUpRequest;
+import com.myprojects.expense.authenticator.model.request.LoginRequest;
 import com.myprojects.expense.authenticator.model.response.LoginResponse;
-import com.myprojects.expense.authenticator.service.AppUserService;
+import com.myprojects.expense.authenticator.service.AccessTokenService;
 import com.myprojects.expense.authenticator.test.ControllerTestsBaseConfig;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -14,6 +13,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.MockitoTestExecutionListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
@@ -26,44 +26,42 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest
-@ContextConfiguration(classes = {AppUserController.class, ControllerTestsBaseConfig.class})
+@ContextConfiguration(classes = {AccessTokenController.class, ControllerTestsBaseConfig.class})
 @TestExecutionListeners(MockitoTestExecutionListener.class)
-public class AppUserControllerTests extends AbstractTestNGSpringContextTests {
+public class AccessTokenControllerTests extends AbstractTestNGSpringContextTests {
 
-    private static final String VALID_SIGN_UP_REQUEST_BODY = "{" +
-            "\"name\": \"test_user\"," +
+    private static final String VALID_LOGIN_REQUEST_BODY = "{" +
             "\"email\": \"test.user@gmail.com\"," +
             "\"password\": \"Abc123456\"" +
             "}";
 
     @MockBean
-    private AppUserService mockUserService;
+    private AccessTokenService mockAccessTokenService;
 
     @Autowired
     private MockMvc mockMvc;
 
     @BeforeMethod
     public void resetMocks() {
-        Mockito.reset(mockUserService);
+        Mockito.reset(mockAccessTokenService);
     }
 
     @Test
-    public void testSignUp() throws Exception {
+    public void testLogin() throws Exception {
         LoginResponse response = new LoginResponse();
         response.setToken("t1");
 
-        Mockito.when(mockUserService.signUp(any()))
+        Mockito.when(mockAccessTokenService.login(any()))
                 .thenReturn(response);
 
-        mockMvc.perform(post(AppUserController.PATH)
-                .content(VALID_SIGN_UP_REQUEST_BODY)
+        mockMvc.perform(post(AccessTokenController.PATH)
+                .content(VALID_LOGIN_REQUEST_BODY)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status()
@@ -73,13 +71,11 @@ public class AppUserControllerTests extends AbstractTestNGSpringContextTests {
                 .andExpect(content()
                         .json("{\"token\": \"t1\"}", true));
 
-        ArgumentCaptor<SignUpRequest> requestCaptor =
-                ArgumentCaptor.forClass(SignUpRequest.class);
+        ArgumentCaptor<LoginRequest> requestCaptor = ArgumentCaptor.forClass(LoginRequest.class);
 
-        Mockito.verify(mockUserService).signUp(requestCaptor.capture());
+        Mockito.verify(mockAccessTokenService).login(requestCaptor.capture());
 
-        SignUpRequest request = requestCaptor.getValue();
-        assertThat(request.getName(), is("test_user"));
+        LoginRequest request = requestCaptor.getValue();
         assertThat(request.getEmail(), is("test.user@gmail.com"));
         assertThat(request.getPassword(), is("Abc123456"));
     }
@@ -88,46 +84,23 @@ public class AppUserControllerTests extends AbstractTestNGSpringContextTests {
     public Object[][] testErrorResponseCases() {
         return new Object[][]{
                 {Runnables.doNothing(),
-                        post(AppUserController.PATH)
+                        post(AccessTokenController.PATH)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{" +
-                                "\"name\": \"" + "X".repeat(256) + "\"," +
-                                "\"email\": \"invalid\"," +
-                                "\"password\": \"......\"" +
-                                "}"),
+                                .content("{}"),
                         HttpStatus.BAD_REQUEST,
                         "{\"message\":\"Bad request!\",\"errors\":[" +
-                                "\"'password' Password must contain at least 1 lowercase characters.\"," +
-                                "\"'password' Password must contain at least 1 digit characters.\"," +
-                                "\"'name' size must be between 1 and 255\"," +
-                                "\"'email' must be a well-formed email address\"," +
-                                "\"'password' Password must contain at least 1 uppercase characters.\"," +
-                                "\"'password' Password must be at least 8 characters in length.\"" +
+                                "\"'password' must not be empty\"," +
+                                "\"'email' must not be empty\"" +
                                 "]}",
                         false
                 },
-                {(Runnable) () -> Mockito.doThrow(new EmailAlreadyUsedException())
-                        .when(mockUserService).signUp(any()),
-                        post(AppUserController.PATH)
+                {(Runnable) () -> Mockito.doThrow(new BadCredentialsException("some ex for testing!"))
+                        .when(mockAccessTokenService).login(any()),
+                        post(AccessTokenController.PATH)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(VALID_SIGN_UP_REQUEST_BODY),
+                                .content(VALID_LOGIN_REQUEST_BODY),
                         HttpStatus.BAD_REQUEST,
-                        "{\"message\":\"A user is already registered with the provided email!\"}",
-                        true
-                },
-                {(Runnable) () -> Mockito.doThrow(new RuntimeException("some exception for testing"))
-                        .when(mockUserService).signUp(any()),
-                        post(AppUserController.PATH)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(VALID_SIGN_UP_REQUEST_BODY),
-                        HttpStatus.INTERNAL_SERVER_ERROR,
-                        "{\"message\":\"An internal error has occurred!\"}",
-                        true
-                },
-                {Runnables.doNothing(),
-                        get("wrong-path"),
-                        HttpStatus.FORBIDDEN,
-                        "{\"message\":\"Access denied!\"}",
+                        "{\"message\":\"User authentication failed!\"}",
                         true
                 }
         };

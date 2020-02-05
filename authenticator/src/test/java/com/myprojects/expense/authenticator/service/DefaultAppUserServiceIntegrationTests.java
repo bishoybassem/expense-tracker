@@ -5,6 +5,7 @@ import com.myprojects.expense.authenticator.dao.AppUserDao;
 import com.myprojects.expense.authenticator.exception.EmailAlreadyUsedException;
 import com.myprojects.expense.authenticator.model.AppUser;
 import com.myprojects.expense.authenticator.model.request.SignUpRequest;
+import com.myprojects.expense.authenticator.model.response.LoginResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
@@ -17,6 +18,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.text.IsEmptyString.emptyString;
 
 @SpringBootTest(classes = AuthenticatorAppConfig.class)
 public class DefaultAppUserServiceIntegrationTests extends AbstractTestNGSpringContextTests {
@@ -33,7 +35,9 @@ public class DefaultAppUserServiceIntegrationTests extends AbstractTestNGSpringC
     public void testSignUp() {
         SignUpRequest request = createSignUpRequest();
 
-        userService.signUp(request);
+        LoginResponse response = userService.signUp(request);
+
+        assertThat(response.getToken(), not(emptyString()));
 
         AppUser user = userDao.findByEmail(request.getEmail()).get();
         assertThat(user.getName(), is(request.getName()));
