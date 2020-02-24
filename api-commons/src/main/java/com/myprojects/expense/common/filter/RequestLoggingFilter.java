@@ -1,4 +1,4 @@
-package com.myprojects.expense.tracker.filter;
+package com.myprojects.expense.common.filter;
 
 import org.springframework.web.filter.AbstractRequestLoggingFilter;
 
@@ -6,11 +6,11 @@ import javax.servlet.http.HttpServletRequest;
 
 public class RequestLoggingFilter extends AbstractRequestLoggingFilter {
 
-    public RequestLoggingFilter() {
+    public RequestLoggingFilter(boolean includePayload) {
         setBeforeMessagePrefix("[");
         setAfterMessagePrefix("[");
         setIncludeQueryString(true);
-        setIncludePayload(true);
+        setIncludePayload(includePayload);
         setMaxPayloadLength(1000);
     }
 
@@ -21,12 +21,12 @@ public class RequestLoggingFilter extends AbstractRequestLoggingFilter {
 
     @Override
     protected void beforeRequest(HttpServletRequest request, String message) {
-        logger.info(String.format("START %s %s",request.getMethod(), message));
+        logger.info(String.format("START %s", message));
     }
 
     @Override
     protected void afterRequest(HttpServletRequest request, String message) {
-        logger.info(String.format("END   %s %s",request.getMethod(), message));
+        logger.info(String.format("END   %s", message));
     }
 
 }

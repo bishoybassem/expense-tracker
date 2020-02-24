@@ -40,5 +40,5 @@ test {
 
     dependsOn ':composeUp'
     finalizedBy stopAndCopyCoverage, ':composeLogs', ':composeDown'
-    mustRunAfter ':tracker:test', ':reporter:test'
+    mustRunAfter ':authenticator:test', ':tracker:test', ':reporter:test'
 }

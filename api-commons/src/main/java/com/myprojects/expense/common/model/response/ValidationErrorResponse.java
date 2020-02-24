@@ -1,4 +1,4 @@
-package com.myprojects.expense.authenticator.model.response;
+package com.myprojects.expense.common.model.response;
 
 import java.util.ArrayList;
 import java.util.List;

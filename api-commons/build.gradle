@@ -1,0 +1,33 @@
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot' version '2.2.2.RELEASE'
+    id 'jacoco'
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'com.auth0:java-jwt:3.9.0'
+
+    testImplementation 'org.testng:testng:7.1.0'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+}
+
+bootJar.enabled = false
+jar.enabled = true
+
+test {
+    useTestNG() {
+        useDefaultListeners = true
+    }
+
+    testLogging {
+        showStandardStreams = true
+        events 'started', 'passed', 'skipped', 'failed'
+    }
+
+    outputs.upToDateWhen { false }
+}

@@ -1,9 +1,9 @@
 package com.myprojects.expense.reporter.controller;
 
+import com.myprojects.expense.common.model.response.ErrorResponse;
 import com.myprojects.expense.reporter.exception.ReportNotFoundException;
-import com.myprojects.expense.reporter.model.response.ErrorResponse;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,9 +15,9 @@ import java.time.DateTimeException;
 import java.time.format.DateTimeFormatter;
 
 @ControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class ReporterExceptionHandlers {
-
-    private static final Log LOGGER = LogFactory.getLog(ReporterExceptionHandlers.class);
+    
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     @ExceptionHandler
@@ -40,14 +40,6 @@ public class ReporterExceptionHandlers {
     @ResponseBody
     public ErrorResponse handleDateTimeException() {
         return new ErrorResponse("An invalid date has been requested!");
-    }
-
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ResponseBody
-    public ErrorResponse handleGenericException(Exception ex) {
-        LOGGER.error("An exception occurred while processing request!", ex);
-        return new ErrorResponse("An internal error has occurred!");
     }
 
 }

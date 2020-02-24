@@ -64,9 +64,9 @@ public class DayReport {
 
     public static DayReport emptyReport(LocalDate date) {
         ReportStats stats = new ReportStats();
-        stats.setTotal(BigDecimal.ZERO);
-        stats.setTotalExpenses(BigDecimal.ZERO);
-        stats.setTotalIncomes(BigDecimal.ZERO);
+        stats.setTotal(new BigDecimal("0.0"));
+        stats.setTotalExpenses(new BigDecimal("0.0"));
+        stats.setTotalIncomes(new BigDecimal("0.0"));
 
         DayReport emptyReport = new DayReport();
         emptyReport.setDate(date);

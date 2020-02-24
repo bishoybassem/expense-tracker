@@ -20,10 +20,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.comparesEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 
 @DataMongoTest
@@ -61,7 +64,7 @@ public class DefaultTransactionEventHandlerIntegrationTests extends AbstractTest
             result.get();
         }
         DayReport report = reportService.getDayReport(TEST_DATE);
-        assertThat(report.getStats().getTotal(), is(BigDecimal.valueOf(events)));
+        assertThat(report.getStats().getTotal(), comparesEqualTo(BigDecimal.valueOf(events)));
         assertThat(report.getIncomes(), hasSize(events));
     }
 

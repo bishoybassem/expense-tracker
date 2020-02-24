@@ -5,12 +5,15 @@ plugins {
 apply plugin: 'io.spring.dependency-management'
 
 dependencies {
+    implementation project(':api-commons')
     implementation project(':mq-messages')
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     testImplementation 'org.testng:testng:7.1.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
 }

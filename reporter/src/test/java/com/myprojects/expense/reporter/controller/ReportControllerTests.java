@@ -1,6 +1,8 @@
 package com.myprojects.expense.reporter.controller;
 
+import com.google.common.util.concurrent.Runnables;
 import com.myprojects.expense.reporter.config.ReporterControllerConfig;
+import com.myprojects.expense.reporter.config.ReporterWebSecurityConfig;
 import com.myprojects.expense.reporter.exception.ReportNotFoundException;
 import com.myprojects.expense.reporter.model.ReportStats;
 import com.myprojects.expense.reporter.model.ReportTransaction;
@@ -11,11 +13,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.MockitoTestExecutionListener;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -28,13 +35,14 @@ import java.util.Arrays;
 import static java.util.Collections.emptyList;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ReportController.class)
-@ContextConfiguration(classes = ReporterControllerConfig.class)
+@ContextConfiguration(classes = {ReporterControllerConfig.class, ReporterWebSecurityConfig.class})
 @TestExecutionListeners(MockitoTestExecutionListener.class)
 public class ReportControllerTests extends AbstractTestNGSpringContextTests {
 
@@ -59,7 +67,8 @@ public class ReportControllerTests extends AbstractTestNGSpringContextTests {
                 eq(TEST_DATE.getDayOfMonth())))
                 .thenReturn(createReport());
 
-        mockMvc.perform(get(ReportController.PATH + TEST_DATE_PATH))
+        mockMvc.perform(get(ReportController.PATH + TEST_DATE_PATH)
+                .with(authentication(createAuthenticatedToken())))
                 .andDo(print())
                 .andExpect(status()
                         .isOk())
@@ -84,61 +93,64 @@ public class ReportControllerTests extends AbstractTestNGSpringContextTests {
                                 "}", true));
     }
 
-    @Test
-    public void testGetRequestNotFound() throws Exception {
-        Mockito.when(mockReportService.getDayReport(eq(TEST_DATE.getYear()), eq(TEST_DATE.getMonthValue()),
-                eq(TEST_DATE.getDayOfMonth())))
-                .thenThrow(new ReportNotFoundException(TEST_DATE));
-
-        mockMvc.perform(get(ReportController.PATH + TEST_DATE_PATH))
-                .andDo(print())
-                .andExpect(status()
-                        .isNotFound())
-                .andExpect(content()
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content()
-                        .json("{\"message\":\"Report for date (" + TEST_DATE_RESPONSE
-                                + ") is not found!\"}", true));
-    }
-
     @DataProvider
-    public static Object[][] testGetRequestValidationCases() {
+    public Object[][] testErrorResponseCases() {
         return new Object[][] {
-                {"/aaaa/bb/cc", "{\"message\":\"An invalid date has been requested!\"}"},
-                {"/2020/bb/cc", "{\"message\":\"An invalid date has been requested!\"}"},
-                {"/2020/12/cc", "{\"message\":\"An invalid date has been requested!\"}"},
-                {"/-1/13/50", "{\"message\":\"An invalid date has been requested!\"}"},
+                {(Runnable) () ->  Mockito.when(mockReportService.getDayReport(anyInt(), anyInt(), anyInt()))
+                        .thenThrow(new ReportNotFoundException(TEST_DATE)),
+                        get(ReportController.PATH + TEST_DATE_PATH)
+                                .with(authentication(createAuthenticatedToken())),
+                        HttpStatus.NOT_FOUND,
+                        "{\"message\":\"Report for date (" + TEST_DATE_RESPONSE + ") is not found!\"}",
+                        true
+                },
+                {(Runnable) () -> Mockito.doCallRealMethod()
+                        .when(mockReportService).getDayReport(anyInt(), anyInt(), anyInt()),
+                        get(ReportController.PATH + "/aaaa/bb/cc")
+                                .with(authentication(createAuthenticatedToken())),
+                        HttpStatus.BAD_REQUEST,
+                        "{\"message\":\"An invalid date has been requested!\"}",
+                        true
+                },
+                {(Runnable) () -> Mockito.doCallRealMethod()
+                        .when(mockReportService).getDayReport(anyInt(), anyInt(), anyInt()),
+                        get(ReportController.PATH + "/-1/13/50")
+                                .with(authentication(createAuthenticatedToken())),
+                        HttpStatus.BAD_REQUEST,
+                        "{\"message\":\"An invalid date has been requested!\"}",
+                        true
+                },
+                {(Runnable) () -> Mockito.doThrow(new RuntimeException("some exception for testing"))
+                        .when(mockReportService).getDayReport(anyInt(), anyInt(), anyInt()),
+                        get(ReportController.PATH + TEST_DATE_PATH)
+                                .with(authentication(createAuthenticatedToken())),
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "{\"message\":\"An internal error has occurred!\"}",
+                        true
+                },
+                {Runnables.doNothing(),
+                        get(ReportController.PATH + TEST_DATE_PATH),
+                        HttpStatus.FORBIDDEN,
+                        "{\"message\":\"Access denied!\"}",
+                        true
+                },
         };
     }
 
-    @Test(dataProvider = "testGetRequestValidationCases")
-    public void testGetRequestValidation(String path, String expectedError) throws Exception {
-        Mockito.doCallRealMethod()
-                .when(mockReportService).getDayReport(anyInt(), anyInt(), anyInt());
+    @Test(dataProvider = "testErrorResponseCases")
+    public void testErrorResponse(Runnable beforeRequest, MockHttpServletRequestBuilder requestBuilder,
+                                  HttpStatus expectedStatus, String expectedJsonResponse,
+                                  boolean strictJsonComparison) throws Exception {
+        beforeRequest.run();
 
-        mockMvc.perform(get(ReportController.PATH + path))
+        mockMvc.perform(requestBuilder)
                 .andDo(print())
                 .andExpect(status()
-                        .isBadRequest())
+                        .is(expectedStatus.value()))
                 .andExpect(content()
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(content()
-                        .json(expectedError, true));
-    }
-
-    @Test
-    public void testGenericExceptionResponse() throws Exception {
-        Mockito.doThrow(new RuntimeException("some exception for testing"))
-                .when(mockReportService).getDayReport(anyInt(), anyInt(), anyInt());
-
-        mockMvc.perform(get(ReportController.PATH + TEST_DATE_PATH))
-                .andDo(print())
-                .andExpect(status()
-                        .isInternalServerError())
-                .andExpect(content()
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content()
-                        .json("{\"message\":\"An internal error has occurred!\"}", true));
+                        .json(expectedJsonResponse, strictJsonComparison));
     }
 
     private static DayReportResponse createReport() {
@@ -148,5 +160,10 @@ public class ReportControllerTests extends AbstractTestNGSpringContextTests {
         report.setIncomes(Arrays.asList(new ReportTransaction("tid", BigDecimal.TEN, "test")));
         report.setExpenses(emptyList());
         return report;
+    }
+
+    private static Authentication createAuthenticatedToken() {
+        return new UsernamePasswordAuthenticationToken("some-id", null,
+                Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     }
 }

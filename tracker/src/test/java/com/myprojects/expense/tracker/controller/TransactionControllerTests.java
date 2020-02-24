@@ -1,6 +1,8 @@
 package com.myprojects.expense.tracker.controller;
 
+import com.google.common.util.concurrent.Runnables;
 import com.myprojects.expense.tracker.config.TrackerControllerConfig;
+import com.myprojects.expense.tracker.config.TrackerWebSecurityConfig;
 import com.myprojects.expense.tracker.exception.TransactionNotFoundException;
 import com.myprojects.expense.tracker.model.TransactionType;
 import com.myprojects.expense.tracker.model.request.CreateTransactionRequest;
@@ -14,12 +16,18 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.MockitoTestExecutionListener;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
@@ -31,6 +39,7 @@ import java.util.UUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -41,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(TransactionController.class)
-@ContextConfiguration(classes = TrackerControllerConfig.class)
+@ContextConfiguration(classes = {TrackerControllerConfig.class, TrackerWebSecurityConfig.class})
 @TestExecutionListeners(MockitoTestExecutionListener.class)
 public class TransactionControllerTests extends AbstractTestNGSpringContextTests {
 
@@ -70,7 +79,8 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
                         + "\"date\": \"2017/03/20\","
                         + "\"comment\": \"comment\""
                         + "}")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(authentication(createAuthenticatedToken())))
                 .andDo(print())
                 .andExpect(status()
                         .isCreated())
@@ -94,24 +104,6 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
     }
 
     @Test
-    public void testCreateRequestValidation() throws Exception {
-        mockMvc.perform(post(TransactionController.PATH)
-                .content("{\"type\":\"wrong\"}")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status()
-                        .isBadRequest())
-                .andExpect(content()
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content()
-                        .json("{\"message\":\"Bad request!\",\"errors\":[" +
-                                "\"'type' has to be either 'INCOME' or 'EXPENSE'\"," +
-                                "\"'date' must not be null\"," +
-                                "\"'amount' must not be null\"" +
-                                "]}"));
-    }
-
-    @Test
     public void testUpdateRequest() throws Exception {
         final UUID transactionId = UUID.randomUUID();
         Mockito.when(mockTransactionService.update(any(), any()))
@@ -124,7 +116,8 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
                         + "\"date\": \"2017/03/20\","
                         + "\"comment\": \"comment\""
                         + "}")
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(authentication(createAuthenticatedToken())))
                 .andDo(print())
                 .andExpect(status()
                         .isOk())
@@ -151,44 +144,13 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
     }
 
     @Test
-    public void testUpdateRequestValidation() throws Exception {
-        mockMvc.perform(put(TransactionController.PATH + "/" + UUID.randomUUID())
-                .content("{\"category\":\"" + "X".repeat(40) + "\"}")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status()
-                        .isBadRequest())
-                .andExpect(content()
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content()
-                        .json("{\"message\":\"Bad request!\",\"errors\":[" +
-                                "\"'category' size must be between 0 and 30\"," +
-                                "\"'date' must not be null\"," +
-                                "\"'amount' must not be null\"" +
-                                "]}"));
-    }
-
-    @Test
-    public void testUpdateRequestIdValidation() throws Exception {
-        mockMvc.perform(put(TransactionController.PATH + "/wrong-id")
-                .content("{}")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status()
-                        .isBadRequest())
-                .andExpect(content()
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content()
-                        .json("{\"message\":\"The provided value 'wrong-id' is an invalid UUID\"}"));
-    }
-
-    @Test
     public void testGetRequest() throws Exception {
         final UUID transactionId = UUID.randomUUID();
         Mockito.when(mockTransactionService.get(transactionId))
                 .thenReturn(createTestTransactionResponse(transactionId));
 
-        mockMvc.perform(get(TransactionController.PATH + "/" + transactionId))
+        mockMvc.perform(get(TransactionController.PATH + "/" + transactionId)
+                .with(authentication(createAuthenticatedToken())))
                 .andDo(print())
                 .andExpect(status()
                         .isOk())
@@ -209,7 +171,8 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
         String expectedResponseBody = "[" + expectedJsonResponseBody(transactionId1) + ","
                 + expectedJsonResponseBody(transactionId2) + "]";
 
-        mockMvc.perform(get(TransactionController.PATH))
+        mockMvc.perform(get(TransactionController.PATH)
+                .with(authentication(createAuthenticatedToken())))
                 .andDo(print())
                 .andExpect(status()
                         .isOk())
@@ -225,7 +188,8 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
         Mockito.doNothing()
                 .when(mockTransactionService).delete(transactionId);
 
-        mockMvc.perform(delete(TransactionController.PATH + "/" + transactionId))
+        mockMvc.perform(delete(TransactionController.PATH + "/" + transactionId)
+                .with(authentication(createAuthenticatedToken())))
                 .andDo(print())
                 .andExpect(status()
                         .isNoContent())
@@ -235,36 +199,84 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
                         .string(""));
     }
 
-    @Test
-    public void testDeleteRequestNotFound() throws Exception {
+    @DataProvider
+    public Object[][] testErrorResponseCases() {
         final UUID transactionId = UUID.randomUUID();
-        Mockito.doThrow(new TransactionNotFoundException(transactionId))
-                .when(mockTransactionService).delete(any());
-
-        mockMvc.perform(delete(TransactionController.PATH + "/" + transactionId))
-                .andDo(print())
-                .andExpect(status()
-                        .isNotFound())
-                .andExpect(content()
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(content()
-                        .json("{\"message\":\"Transaction with id (" + transactionId + ") " +
-                                "is not found!\"}", true));
+        return new Object[][] {
+                {Runnables.doNothing(),
+                        post(TransactionController.PATH)
+                                .content("{\"type\":\"wrong\"}")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .with(authentication(createAuthenticatedToken())),
+                        HttpStatus.BAD_REQUEST,
+                        "{\"message\":\"Bad request!\",\"errors\":[" +
+                                "\"'type' has to be either 'INCOME' or 'EXPENSE'\"," +
+                                "\"'date' must not be null\"," +
+                                "\"'amount' must not be null\"" +
+                                "]}",
+                        false
+                },
+                {Runnables.doNothing(),
+                        put(TransactionController.PATH + "/" + UUID.randomUUID())
+                                .content("{\"category\":\"" + "X".repeat(40) + "\"}")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .with(authentication(createAuthenticatedToken())),
+                        HttpStatus.BAD_REQUEST,
+                        "{\"message\":\"Bad request!\",\"errors\":[" +
+                                "\"'category' size must be between 0 and 30\"," +
+                                "\"'date' must not be null\"," +
+                                "\"'amount' must not be null\"" +
+                                "]}",
+                        false
+                },
+                {Runnables.doNothing(),
+                        put(TransactionController.PATH + "/wrong-id")
+                                .content("{}")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .with(authentication(createAuthenticatedToken())),
+                        HttpStatus.BAD_REQUEST,
+                        "{\"message\":\"The provided value 'wrong-id' is an invalid UUID!\"}",
+                        true
+                },
+                {(Runnable) () -> Mockito.doThrow(new TransactionNotFoundException(transactionId))
+                        .when(mockTransactionService).delete(any()),
+                        delete(TransactionController.PATH + "/" + transactionId)
+                                .with(authentication(createAuthenticatedToken())),
+                        HttpStatus.NOT_FOUND,
+                        "{\"message\":\"Transaction with id (" + transactionId + ") is not found!\"}",
+                        true
+                },
+                {(Runnable) () -> Mockito.doThrow(new RuntimeException("some exception for testing"))
+                        .when(mockTransactionService).get(any()),
+                        get(TransactionController.PATH + "/" + UUID.randomUUID())
+                                .with(authentication(createAuthenticatedToken())),
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "{\"message\":\"An internal error has occurred!\"}",
+                        true
+                },
+                {Runnables.doNothing(),
+                        get(TransactionController.PATH + "/" + UUID.randomUUID()),
+                        HttpStatus.FORBIDDEN,
+                        "{\"message\":\"Access denied!\"}",
+                        true
+                },
+        };
     }
 
-    @Test
-    public void testGenericExceptionResponse() throws Exception {
-        Mockito.doThrow(new RuntimeException("some exception for testing"))
-                .when(mockTransactionService).get(any());
+    @Test(dataProvider = "testErrorResponseCases")
+    public void testErrorResponse(Runnable beforeRequest, MockHttpServletRequestBuilder requestBuilder,
+                                  HttpStatus expectedStatus, String expectedJsonResponse,
+                                  boolean strictJsonComparison) throws Exception {
+        beforeRequest.run();
 
-        mockMvc.perform(get(TransactionController.PATH + "/" + UUID.randomUUID()))
+        mockMvc.perform(requestBuilder)
                 .andDo(print())
                 .andExpect(status()
-                        .isInternalServerError())
+                        .is(expectedStatus.value()))
                 .andExpect(content()
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(content()
-                        .json("{\"message\":\"An internal error has occurred!\"}", true));
+                        .json(expectedJsonResponse, strictJsonComparison));
     }
 
     private static TransactionResponse createTestTransactionResponse(UUID transactionId) {
@@ -287,5 +299,10 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
                 + "\"date\":\"2018/02/13\","
                 + "\"comment\":\"comment\""
                 + "}";
+    }
+
+    private static Authentication createAuthenticatedToken() {
+        return new UsernamePasswordAuthenticationToken("some-id", null,
+                Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     }
 }

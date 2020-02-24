@@ -1,4 +1,4 @@
-package com.myprojects.expense.authenticator.model.response;
+package com.myprojects.expense.common.model.response;
 
 public class ErrorResponse {
 
@@ -6,6 +6,10 @@ public class ErrorResponse {
 
     public ErrorResponse(String message) {
         this.message = message;
+    }
+
+    public ErrorResponse(String messageFormat, Object... args) {
+        this.message = String.format(messageFormat, args);
     }
 
     public String getMessage() {

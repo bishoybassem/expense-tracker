@@ -1,1 +1,1 @@
-include 'tracker', 'reporter', 'authenticator', 'mq-messages', 'blackbox-tests'
+include 'tracker', 'reporter', 'authenticator', 'api-commons', 'mq-messages', 'blackbox-tests'

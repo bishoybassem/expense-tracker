@@ -28,6 +28,7 @@ import static java.math.BigDecimal.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.comparesEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
@@ -63,9 +64,9 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         assertThat(report.getExpenses().get(0).getId(), is("some_id"));
         assertThat(report.getExpenses().get(0).getAmount(), is(ONE));
         assertThat(report.getExpenses().get(0).getCategory(), is("abc"));
-        assertThat(report.getStats().getTotal(), is(ONE.negate()));
-        assertThat(report.getStats().getTotalIncomes(), is(ZERO));
-        assertThat(report.getStats().getTotalExpenses(), is(ONE));
+        assertThat(report.getStats().getTotal(), comparesEqualTo(ONE.negate()));
+        assertThat(report.getStats().getTotalIncomes(), comparesEqualTo(ZERO));
+        assertThat(report.getStats().getTotalExpenses(), comparesEqualTo(ONE));
     }
 
     @Test
@@ -77,9 +78,9 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         assertThat(report.getIncomes().get(0).getAmount(), is(ONE));
         assertThat(report.getIncomes().get(0).getCategory(), is("abc"));
         assertThat(report.getExpenses(), hasSize(0));
-        assertThat(report.getStats().getTotal(), is(ONE));
-        assertThat(report.getStats().getTotalIncomes(), is(ONE));
-        assertThat(report.getStats().getTotalExpenses(), is(ZERO));
+        assertThat(report.getStats().getTotal(), comparesEqualTo(ONE));
+        assertThat(report.getStats().getTotalIncomes(), comparesEqualTo(ONE));
+        assertThat(report.getStats().getTotalExpenses(), comparesEqualTo(ZERO));
     }
 
     @Test
@@ -88,9 +89,9 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         DayReport report = handleEvent(newCreateEvent("income_id2", false));
         assertThat(report.getIncomes(), hasSize(1));
         assertThat(report.getExpenses(), hasSize(2));
-        assertThat(report.getStats().getTotal(), is(new BigDecimal("4")));
-        assertThat(report.getStats().getTotalIncomes(), is(TEN));
-        assertThat(report.getStats().getTotalExpenses(), is(new BigDecimal("6")));
+        assertThat(report.getStats().getTotal(), comparesEqualTo(new BigDecimal("4")));
+        assertThat(report.getStats().getTotalIncomes(), comparesEqualTo(TEN));
+        assertThat(report.getStats().getTotalExpenses(), comparesEqualTo(new BigDecimal("6")));
     }
 
     @Test
@@ -99,9 +100,9 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         DayReport report = handleEvent(newDeleteEvent("income_id", true));
         assertThat(report.getIncomes(), hasSize(0));
         assertThat(report.getExpenses(), hasSize(1));
-        assertThat(report.getStats().getTotal(), is(FIVE.negate()));
-        assertThat(report.getStats().getTotalIncomes(), is(ZERO));
-        assertThat(report.getStats().getTotalExpenses(), is(FIVE));
+        assertThat(report.getStats().getTotal(), comparesEqualTo(FIVE.negate()));
+        assertThat(report.getStats().getTotalIncomes(), comparesEqualTo(ZERO));
+        assertThat(report.getStats().getTotalExpenses(), comparesEqualTo(FIVE));
     }
 
     @Test
@@ -110,9 +111,9 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         DayReport report = handleEvent(newDeleteEvent("expense_id", false));
         assertThat(report.getIncomes(), hasSize(1));
         assertThat(report.getExpenses(), hasSize(0));
-        assertThat(report.getStats().getTotal(), is(TEN));
-        assertThat(report.getStats().getTotalIncomes(), is(TEN));
-        assertThat(report.getStats().getTotalExpenses(), is(ZERO));
+        assertThat(report.getStats().getTotal(), comparesEqualTo(TEN));
+        assertThat(report.getStats().getTotalIncomes(), comparesEqualTo(TEN));
+        assertThat(report.getStats().getTotalExpenses(), comparesEqualTo(ZERO));
     }
 
     @Test
@@ -121,9 +122,9 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         DayReport report = handleEvent(newDeleteEvent("some_id", false));
         assertThat(report.getIncomes(), hasSize(0));
         assertThat(report.getExpenses(), hasSize(0));
-        assertThat(report.getStats().getTotal(), is(ZERO));
-        assertThat(report.getStats().getTotalIncomes(), is(ZERO));
-        assertThat(report.getStats().getTotalExpenses(), is(ZERO));
+        assertThat(report.getStats().getTotal(), comparesEqualTo(ZERO));
+        assertThat(report.getStats().getTotalIncomes(), comparesEqualTo(ZERO));
+        assertThat(report.getStats().getTotalExpenses(), comparesEqualTo(ZERO));
     }
 
     @Test
@@ -132,9 +133,9 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         DayReport report = handleEvent(newModifyEvent("income_id", true));
         assertThat(report.getIncomes(), hasSize(1));
         assertThat(report.getExpenses(), hasSize(1));
-        assertThat(report.getStats().getTotal(), is(new BigDecimal("15")));
-        assertThat(report.getStats().getTotalIncomes(), is(new BigDecimal("20")));
-        assertThat(report.getStats().getTotalExpenses(), is(FIVE));
+        assertThat(report.getStats().getTotal(), comparesEqualTo(new BigDecimal("15")));
+        assertThat(report.getStats().getTotalIncomes(), comparesEqualTo(new BigDecimal("20")));
+        assertThat(report.getStats().getTotalExpenses(), comparesEqualTo(FIVE));
     }
 
     @Test
@@ -143,9 +144,9 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         DayReport report = handleEvent(newModifyEvent("expense_id", false));
         assertThat(report.getIncomes(), hasSize(1));
         assertThat(report.getExpenses(), hasSize(1));
-        assertThat(report.getStats().getTotal(), is(TEN.negate()));
-        assertThat(report.getStats().getTotalIncomes(), is(TEN));
-        assertThat(report.getStats().getTotalExpenses(), is(new BigDecimal("20")));
+        assertThat(report.getStats().getTotal(), comparesEqualTo(TEN.negate()));
+        assertThat(report.getStats().getTotalIncomes(), comparesEqualTo(TEN));
+        assertThat(report.getStats().getTotalExpenses(), comparesEqualTo(new BigDecimal("20")));
     }
 
     private DayReport handleEvent(Event event) {
