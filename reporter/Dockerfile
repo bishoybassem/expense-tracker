@@ -3,7 +3,7 @@ FROM openjdk:11-jre-slim
 LABEL maintainer="bishoy"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends netcat=1.10-41.1 curl=7.64.0-4 \
+    && apt-get install -y --no-install-recommends netcat curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
