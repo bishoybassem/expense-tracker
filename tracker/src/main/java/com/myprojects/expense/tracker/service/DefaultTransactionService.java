@@ -14,6 +14,8 @@ import com.myprojects.expense.tracker.model.response.TransactionResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
@@ -51,7 +53,7 @@ public class DefaultTransactionService implements TransactionService {
      */
     @Override
     public List<TransactionResponse> getAll() {
-        return Streams.stream(transactionDao.findAll())
+        return Streams.stream(transactionDao.findAllByOwnerId(getLoggedInUserId()))
                 .map(DefaultTransactionService::createResponse)
                 .collect(Collectors.toList());
     }
@@ -75,6 +77,7 @@ public class DefaultTransactionService implements TransactionService {
     @Override
     public TransactionResponse create(CreateTransactionRequest request) {
         Transaction transaction = new Transaction();
+        transaction.setOwnerId(getLoggedInUserId());
         transaction.setType(TransactionType.valueOf(request.getType()));
         transaction.setAmount(request.getAmount());
         transaction.setCategory(request.getCategory());
@@ -110,7 +113,8 @@ public class DefaultTransactionService implements TransactionService {
     }
 
     private Transaction getTransaction(UUID id) {
-        Optional<Transaction> transaction = transactionDao.findById(id);
+        UUID ownerId = getLoggedInUserId();
+        Optional<Transaction> transaction = transactionDao.findByIdAndOwnerId(id, ownerId);
         if (!transaction.isPresent()) {
             LOGGER.info("Transaction with id " + id + " is not found!");
             throw new TransactionNotFoundException(id);
@@ -121,6 +125,11 @@ public class DefaultTransactionService implements TransactionService {
     private void sendEvent(Event event) {
         LOGGER.info("Sending the following event to the message queue:\n" + event.toString());
         rabbitTemplate.convertAndSend(event);
+    }
+
+    private static UUID getLoggedInUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (UUID) authentication.getPrincipal();
     }
 
     private static TransactionResponse createResponse(Transaction transaction) {

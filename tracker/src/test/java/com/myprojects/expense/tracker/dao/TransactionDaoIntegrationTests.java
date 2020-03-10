@@ -14,16 +14,20 @@ import org.testng.annotations.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @ContextConfiguration(classes = TrackerDatabaseConfig.class)
 public class TransactionDaoIntegrationTests extends AbstractTestNGSpringContextTests {
+
+    private static final UUID TEST_OWNER_ID = UUID.randomUUID();
 
     @Autowired
     private TransactionDao dao;
@@ -33,6 +37,7 @@ public class TransactionDaoIntegrationTests extends AbstractTestNGSpringContextT
     @Test
     public void testCreate() {
         Transaction transaction = new Transaction();
+        transaction.setOwnerId(TEST_OWNER_ID);
         transaction.setType(TransactionType.EXPENSE);
         transaction.setAmount(new BigDecimal("1.23"));
         transaction.setCategory("abc");
@@ -47,8 +52,11 @@ public class TransactionDaoIntegrationTests extends AbstractTestNGSpringContextT
 
     @Test(dependsOnMethods = "testCreate")
     public void testFind() {
-        Transaction transaction = dao.findById(createdTransactionId).get();
+        List<Transaction> transactions = dao.findAllByOwnerId(TEST_OWNER_ID);
+        assertThat(transactions, hasSize(1));
+        assertThat(transactions.get(0).getId(), is(createdTransactionId));
 
+        Transaction transaction = dao.findByIdAndOwnerId(createdTransactionId, TEST_OWNER_ID).get();
         assertThat(transaction.getType(), is(TransactionType.EXPENSE));
         assertThat(transaction.getAmount(), is(new BigDecimal("1.23")));
         assertThat(transaction.getCategory(), is("abc"));
@@ -73,7 +81,9 @@ public class TransactionDaoIntegrationTests extends AbstractTestNGSpringContextT
 
     @Test(dependsOnMethods = "testUpdate")
     public void testDelete() {
-        dao.deleteById(createdTransactionId);
+        Transaction transaction = dao.findById(createdTransactionId).get();
+
+        dao.delete(transaction);
 
         assertThat(dao.findById(createdTransactionId).isPresent(), is(false));
     }

@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -59,8 +60,9 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
                 .map(role -> new SimpleGrantedAuthority(role))
                 .collect(Collectors.toSet());
 
+        UUID userId = UUID.fromString(decodedToken.getSubject());
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(decodedToken.getSubject(), null, authorities));
+                new UsernamePasswordAuthenticationToken(userId, null, authorities));
     }
 
 }
