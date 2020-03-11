@@ -11,7 +11,7 @@ import java.util.UUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isEmptyString;
+import static org.hamcrest.Matchers.emptyString;
 
 public class EventToMessageConverterTests {
 
@@ -26,7 +26,7 @@ public class EventToMessageConverterTests {
 
         Event parsedEvent = Event.parseFrom(message.getBody());
         assertThat(parsedEvent.getType(), is(EventType.DELETE));
-        assertThat(parsedEvent.getTransactionId(), not(isEmptyString()));
+        assertThat(parsedEvent.getTransactionId(), not(emptyString()));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)

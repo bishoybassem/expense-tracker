@@ -61,7 +61,7 @@ public class JwtVerificationFilterTests extends AbstractTestNGSpringContextTests
                 .andExpect(status()
                         .isOk());
 
-        assertThat(context.getAuthentication().getPrincipal(), is(userId.toString()));
+        assertThat(context.getAuthentication().getPrincipal(), is(userId));
         assertThat(context.getAuthentication().getCredentials(), nullValue());
         assertThat(context.getAuthentication().getAuthorities(), hasSize(1));
         assertThat(context.getAuthentication().getAuthorities().iterator().next().getAuthority(), is("ROLE_USER"));
@@ -81,8 +81,9 @@ public class JwtVerificationFilterTests extends AbstractTestNGSpringContextTests
 
     @Test
     public void testRequestWithExpiredJwt() throws Exception {
+        Date utcEpoch = Date.from(Instant.EPOCH);
         String expiredToken = JWT.create()
-                .withExpiresAt(Date.from(Instant.EPOCH))
+                .withExpiresAt(utcEpoch)
                 .sign(jwtAlgorithm);
 
         mockMvc.perform(get(EchoController.ECHO_PATH)
@@ -93,7 +94,7 @@ public class JwtVerificationFilterTests extends AbstractTestNGSpringContextTests
                 .andExpect(content()
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(content()
-                        .json("{\"message\":\"The Token has expired on Thu Jan 01 00:00:00 UTC 1970.\"}", true));
+                        .json("{\"message\":\"The Token has expired on " + utcEpoch + ".\"}", true));
     }
 
 }

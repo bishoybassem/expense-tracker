@@ -1,6 +1,5 @@
 package com.myprojects.expense.tracker.service;
 
-import com.google.common.collect.Streams;
 import com.myprojects.expense.messages.EventProtos.Event;
 import com.myprojects.expense.messages.EventProtos.EventData;
 import com.myprojects.expense.messages.EventProtos.EventType;
@@ -14,6 +13,8 @@ import com.myprojects.expense.tracker.model.response.TransactionResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
@@ -37,8 +38,10 @@ public class DefaultTransactionService implements TransactionService {
     }
 
     /**
-     * Queries the transactions by the given id and returns one, If none found, it throws
-     * a {@link TransactionNotFoundException}.
+     * Finds the transaction owned by the authenticated user and with the given id. If found, it populates and returns
+     * a {@link TransactionResponse} with the transaction's details.
+     *
+     * If the transaction is not found, it throws a {@link TransactionNotFoundException}.
      */
     @Override
     public TransactionResponse get(UUID id) {
@@ -47,18 +50,21 @@ public class DefaultTransactionService implements TransactionService {
     }
 
     /**
-     * Queries and returns all transactions.
+     * Queries all transactions owned by the authenticated user, and returns the results as a list of
+     * {@link TransactionResponse}s.
      */
     @Override
     public List<TransactionResponse> getAll() {
-        return Streams.stream(transactionDao.findAll())
+        return transactionDao.findAllByOwnerId(getLoggedInUserId()).stream()
                 .map(DefaultTransactionService::createResponse)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Deletes a transaction by id, then posts a transaction deletion event to the message queue, and returns the
-     * deleted transaction's details.
+     * Deletes the transaction owned by the authenticated user and with the given id. If found, it posts a transaction
+     * deletion event to the message queue.
+     *
+     * If the transaction is not found, it throws a {@link TransactionNotFoundException}.
      */
     @Override
     public void delete(UUID id) {
@@ -69,12 +75,14 @@ public class DefaultTransactionService implements TransactionService {
     }
 
     /**
-     * Creates a new transaction based on the given {@link CreateTransactionRequest}, then posts a transaction
-     * creation event to the message queue, and returns the created transaction's details.
+     * Creates a new transaction owned by the authenticated user and with the given {@link CreateTransactionRequest}
+     * details. If successful, it posts a transaction creation event to the message queue, and returns a
+     * {@link TransactionResponse} with the transaction's details.
      */
     @Override
     public TransactionResponse create(CreateTransactionRequest request) {
         Transaction transaction = new Transaction();
+        transaction.setOwnerId(getLoggedInUserId());
         transaction.setType(TransactionType.valueOf(request.getType()));
         transaction.setAmount(request.getAmount());
         transaction.setCategory(request.getCategory());
@@ -88,9 +96,11 @@ public class DefaultTransactionService implements TransactionService {
     }
 
     /**
-     * Modifies an existing transaction based on the given id and the {@link UpdateTransactionRequest}, then posts a
-     * transaction modification event to the message queue, and returns the modified transaction's details.
-     * If the transaction does not exist, it throws a {@link TransactionNotFoundException}.
+     * Modifies the transaction owned by the authenticated user and with the given id. If found, It sets the
+     * transaction's details to the {@link UpdateTransactionRequest} details, posts a transaction modification
+     * event to the message queue, and returns a {@link TransactionResponse} with the transaction's details.
+     *
+     * If the transaction is not found, it throws a {@link TransactionNotFoundException}.
      */
     @Override
     public TransactionResponse update(UUID id, UpdateTransactionRequest request) {
@@ -110,7 +120,8 @@ public class DefaultTransactionService implements TransactionService {
     }
 
     private Transaction getTransaction(UUID id) {
-        Optional<Transaction> transaction = transactionDao.findById(id);
+        UUID ownerId = getLoggedInUserId();
+        Optional<Transaction> transaction = transactionDao.findByIdAndOwnerId(id, ownerId);
         if (!transaction.isPresent()) {
             LOGGER.info("Transaction with id " + id + " is not found!");
             throw new TransactionNotFoundException(id);
@@ -121,6 +132,11 @@ public class DefaultTransactionService implements TransactionService {
     private void sendEvent(Event event) {
         LOGGER.info("Sending the following event to the message queue:\n" + event.toString());
         rabbitTemplate.convertAndSend(event);
+    }
+
+    private static UUID getLoggedInUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return (UUID) authentication.getPrincipal();
     }
 
     private static TransactionResponse createResponse(Transaction transaction) {
@@ -139,6 +155,7 @@ public class DefaultTransactionService implements TransactionService {
         return Event.newBuilder()
                 .setType(eventType)
                 .setTransactionId(transaction.getId().toString())
+                .setOwnerId(transaction.getOwnerId().toString())
                 .setTransactionType(transaction.getType().getBooleanValue())
                 .setTransactionData(createEventData(transaction))
                 .setOldTransactionData(oldTransactionData == null ?

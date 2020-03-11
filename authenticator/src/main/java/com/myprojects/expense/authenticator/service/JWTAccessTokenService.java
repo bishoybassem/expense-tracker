@@ -28,6 +28,10 @@ public class JWTAccessTokenService implements AccessTokenService {
     @Value("${jwt.validity-duration-minutes}")
     private int jwtValidityDurationMinutes;
 
+    /**
+     * Attempts to authenticate the user based on the given {@link LoginRequest}. It delegates the authentication
+     * to Spring's {@link AuthenticationManager}, and then issues a JWT if the authentication was successful.
+     */
     @Override
     public LoginResponse login(LoginRequest request) {
         UsernamePasswordAuthenticationToken authRequest =

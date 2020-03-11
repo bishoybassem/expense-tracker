@@ -17,9 +17,14 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.MockitoTestExecutionListener;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -31,7 +36,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,6 +48,9 @@ import static org.mockito.Mockito.when;
 @TestExecutionListeners(MockitoTestExecutionListener.class)
 public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextTests {
 
+    private static final UUID TEST_OWNER_ID = UUID.randomUUID();
+    private static final UUID TEST_TRANSACTION_ID = UUID.randomUUID();
+
     @MockBean
     private TransactionDao mockTransactionDao;
 
@@ -53,37 +60,59 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
     @Autowired
     private TransactionService transactionService;
 
+    @BeforeClass
+    public void setSecurityContext() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(TEST_OWNER_ID, null,
+                        Arrays.asList(new SimpleGrantedAuthority("ROLE_USER"))));
+    }
+
+    @AfterClass
+    public void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
     @BeforeMethod
     public void resetMocks() {
         Mockito.reset(mockTransactionDao);
         Mockito.reset(mockRabbitTemplate);
+
+        Mockito.doThrow(new UnsupportedOperationException("findById shouldn't be called! Use findByIdAndOwnerId"))
+                .when(mockTransactionDao).findById(any());
+
+        Mockito.doThrow(new UnsupportedOperationException("findAll shouldn't be called! User findAllByOwnerId"))
+                .when(mockTransactionDao).findAll();
     }
 
     @Test(expectedExceptions = TransactionNotFoundException.class)
     public void testGetNonExistentThrowsException() {
-        when(mockTransactionDao.findById(any())).thenReturn(Optional.empty());
+        when(mockTransactionDao.findByIdAndOwnerId(TEST_TRANSACTION_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.empty());
 
-        transactionService.get(randomUUID());
+        transactionService.get(TEST_TRANSACTION_ID);
     }
 
     @Test(expectedExceptions = TransactionNotFoundException.class)
     public void testUpdateNonExistentThrowsException() {
-        when(mockTransactionDao.findById(any())).thenReturn(Optional.empty());
+        when(mockTransactionDao.findByIdAndOwnerId(TEST_TRANSACTION_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.empty());
 
-        transactionService.update(randomUUID(), new UpdateTransactionRequest());
+        transactionService.update(TEST_TRANSACTION_ID, new UpdateTransactionRequest());
     }
 
     @Test(expectedExceptions = TransactionNotFoundException.class)
     public void testDeleteNonExistentThrowsException() {
-        when(mockTransactionDao.findById(any())).thenReturn(Optional.empty());
+        when(mockTransactionDao.findByIdAndOwnerId(TEST_TRANSACTION_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.empty());
 
-        transactionService.delete(randomUUID());
+        transactionService.delete(TEST_TRANSACTION_ID);
     }
 
     @Test
     public void testGet() {
         Transaction transaction = createTestTransaction();
-        when(mockTransactionDao.findById(transaction.getId())).thenReturn(Optional.of(transaction));
+        when(mockTransactionDao.findByIdAndOwnerId(transaction.getId(), TEST_OWNER_ID))
+                .thenReturn(Optional.of(transaction));
 
         TransactionResponse response = transactionService.get(transaction.getId());
         assertTransactionResponse(response, transaction.getId());
@@ -93,7 +122,8 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
     public void testGetAll() {
         Transaction transaction1 = createTestTransaction();
         Transaction transaction2 = createTestTransaction();
-        when(mockTransactionDao.findAll()).thenReturn(Arrays.asList(transaction1, transaction2));
+        when(mockTransactionDao.findAllByOwnerId(TEST_OWNER_ID))
+                .thenReturn(Arrays.asList(transaction1, transaction2));
 
         List<TransactionResponse> response = transactionService.getAll();
         assertThat(response, hasSize(2));
@@ -103,7 +133,7 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
 
     @Test
     public void testCreatePassesAllFieldsCorrectly() {
-        final UUID transactionId = randomUUID();
+        final UUID transactionId = UUID.randomUUID();
         when(mockTransactionDao.save(any(Transaction.class))).thenAnswer(invocation -> {
             Transaction transaction = invocation.getArgument(0);
             transaction.setId(transactionId);
@@ -131,8 +161,10 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
     @Test
     public void testUpdatePassesAllFieldsCorrectly() {
         Transaction transaction = createTestTransaction();
-        when(mockTransactionDao.findById(transaction.getId())).thenReturn(Optional.of(transaction));
-        when(mockTransactionDao.save(any(Transaction.class))).thenAnswer(returnsFirstArg());
+        when(mockTransactionDao.findByIdAndOwnerId(transaction.getId(), TEST_OWNER_ID))
+                .thenReturn(Optional.of(transaction));
+        when(mockTransactionDao.save(any(Transaction.class)))
+                .thenAnswer(returnsFirstArg());
 
         UpdateTransactionRequest request = new UpdateTransactionRequest();
         request.setAmount(new BigDecimal("2.34"));
@@ -162,7 +194,8 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
     @Test
     public void testDeleteSendsEventCorrectly() {
         Transaction transaction = createTestTransaction();
-        when(mockTransactionDao.findById(transaction.getId())).thenReturn(Optional.of(transaction));
+        when(mockTransactionDao.findByIdAndOwnerId(transaction.getId(), TEST_OWNER_ID))
+                .thenReturn(Optional.of(transaction));
 
         transactionService.delete(transaction.getId());
 
@@ -177,7 +210,8 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
 
     private static Transaction createTestTransaction() {
         Transaction transaction = new Transaction();
-        transaction.setId(randomUUID());
+        transaction.setId(UUID.randomUUID());
+        transaction.setOwnerId(TEST_OWNER_ID);
         transaction.setType(TransactionType.EXPENSE);
         transaction.setAmount(new BigDecimal("1.23"));
         transaction.setCategory("abc");
@@ -199,6 +233,7 @@ public class DefaultTransactionServiceTests extends AbstractTestNGSpringContextT
         assertThat(event, notNullValue());
         assertThat(event.getType(), is(type));
         assertThat(event.getTransactionId(), is(transactionId.toString()));
+        assertThat(event.getOwnerId(), is(TEST_OWNER_ID.toString()));
     }
 
     private static void assertEventData(EventData eventData) {

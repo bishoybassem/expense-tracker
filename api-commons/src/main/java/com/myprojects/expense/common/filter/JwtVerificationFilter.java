@@ -17,12 +17,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Extracts the JWT token from the "X-Access-Token" header, and verifies it. If the verification
- * succeeded, then it would update the {@link org.springframework.security.core.context.SecurityContext}
- * with the authenticated principal.
+ * Extracts the JWT token from the "X-Access-Token" header, and verifies it.
  */
 public class JwtVerificationFilter extends OncePerRequestFilter {
 
@@ -33,6 +32,12 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
                 .build();
     }
 
+    /**
+     * If the "X-Access-Token" header is preset, it tries to verify the JWT. If successful, it updates the
+     * {@link org.springframework.security.core.context.SecurityContext} with the authenticated principal (user id).
+     *
+     * If the JWT verification fails, it throws a {@link JwtVerificationException} with the actual cause.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
         String accessToken = request.getHeader("X-Access-Token");
@@ -59,8 +64,9 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
                 .map(role -> new SimpleGrantedAuthority(role))
                 .collect(Collectors.toSet());
 
+        UUID userId = UUID.fromString(decodedToken.getSubject());
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(decodedToken.getSubject(), null, authorities));
+                new UsernamePasswordAuthenticationToken(userId, null, authorities));
     }
 
 }

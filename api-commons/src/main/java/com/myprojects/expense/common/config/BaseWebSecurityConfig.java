@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 
@@ -24,6 +25,11 @@ public class BaseWebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private Algorithm jwtAlgorithm;
 
+    /**
+     * Creates an {@link AuthenticationEntryPoint}, which responds with a forbidden http response in case of any
+     * {@link AuthenticationException}. If the exception is caused by a {@link TokenExpiredException}, then it
+     * would add more details about the token expiry date in the response message.
+     */
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
         return (request, response, authException) -> {
@@ -38,6 +44,11 @@ public class BaseWebSecurityConfig extends WebSecurityConfigurerAdapter {
         };
     }
 
+    /**
+     * Sets a common Spring security configuration for the microservices, mainly adding the
+     * {@link JwtVerificationFilter} to the filter stack, and setting the {@link AuthenticationEntryPoint} to
+     * {@link BaseWebSecurityConfig#authenticationEntryPoint()}.
+     */
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         JwtVerificationFilter jwtVerificationFilter = new JwtVerificationFilter(jwtAlgorithm);

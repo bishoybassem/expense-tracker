@@ -23,7 +23,7 @@ public class ReportActions {
 
     private final String accessToken;
 
-    public ReportActions(String accessToken) {
+    protected ReportActions(String accessToken) {
         this.accessToken = accessToken;
     }
 
@@ -36,6 +36,10 @@ public class ReportActions {
                 .log().all()
                 .statusCode(anyOf(equalTo(HttpStatus.SC_OK), equalTo(HttpStatus.SC_NOT_FOUND)))
                 .contentType(ContentType.JSON);
+    }
+
+    public static ReportActions withToken(String accessToken) {
+        return new ReportActions(accessToken);
     }
 
 }

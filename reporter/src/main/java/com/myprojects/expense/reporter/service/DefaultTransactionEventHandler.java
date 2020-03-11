@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class DefaultTransactionEventHandler implements TransactionEventHandler {
@@ -32,9 +33,10 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
 
     /**
      * Invoked when a message containing an {@link EventProtos.Event} is consumed from the message queue.
-     * Given an event, this method queries the report with the corresponding date, delegates the update logic to
-     * {@link #handleCreateEvent(EventProtos.Event, DayReport)} and
-     * {@link #handleDeleteEvent(EventProtos.Event, DayReport)} methods, and finally saves the result to the database.
+     * Given an event, this method queries the user's day report based on the event's date and owner id,
+     * delegates the update logic to {@link #handleCreateEvent} and {@link #handleDeleteEvent} methods,
+     * and finally saves the result to the database.
+     *
      * Moreover, the updates to the reports are synchronized among other threads or reporter instances using
      * optimistic locking, and this method would take care of retrying the update logic in case of concurrent
      * modifications done to the same report.
@@ -43,7 +45,7 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
     public void handleTransactionEvent(EventProtos.Event event) {
         retryInCaseOfOptimisticLockingFailure(() -> {
             LOGGER.info("Handling the following event:\n" + event.toString());
-            DayReport dayReport = getDayReport(event.getTransactionData().getDate());
+            DayReport dayReport = getDayReport(event.getTransactionData().getDate(), event.getOwnerId());
             if (event.getType() == EventProtos.EventType.CREATE) {
                 handleCreateEvent(event, dayReport);
             } else if (event.getType() == EventProtos.EventType.DELETE) {
@@ -57,8 +59,8 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
     }
 
     /**
-     * Given a transaction creation event and the corresponding day report, this method adds the new transaction to
-     * the report and updates the report's stats accordingly.
+     * Given a transaction creation event and the corresponding user's day report, this method adds the new
+     * transaction to the report and updates the report's stats accordingly.
      */
     private void handleCreateEvent(EventProtos.Event event, DayReport dayReport) {
         ReportTransaction transaction = new ReportTransaction();
@@ -77,8 +79,8 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
     }
 
     /**
-     * Given a transaction deletion event and the corresponding day report, this method deletes the transaction from
-     * the report and updates the report's stats accordingly.
+     * Given a transaction deletion event and the corresponding user's day report, this method deletes the
+     * transaction from the report and updates the report's stats accordingly.
      */
     private void handleDeleteEvent(EventProtos.Event event, DayReport dayReport) {
         ReportStats stats = dayReport.getStats();
@@ -94,9 +96,9 @@ public class DefaultTransactionEventHandler implements TransactionEventHandler {
         updateTotal(dayReport.getStats());
     }
 
-    private DayReport getDayReport(String date) {
+    private DayReport getDayReport(String date, String ownerId) {
         LocalDate localDate = LocalDate.parse(date, DATE_FORMATTER);
-        return reportService.getDayReportOrCreate(localDate);
+        return reportService.getDayReportOrCreate(localDate, UUID.fromString(ownerId));
     }
 
     private static void updateTotal(ReportStats stats) {

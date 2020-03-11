@@ -31,6 +31,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.UUID;
 
 import static java.util.Collections.emptyList;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -163,7 +164,7 @@ public class ReportControllerTests extends AbstractTestNGSpringContextTests {
     }
 
     private static Authentication createAuthenticatedToken() {
-        return new UsernamePasswordAuthenticationToken("some-id", null,
+        return new UsernamePasswordAuthenticationToken(UUID.randomUUID(), null,
                 Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     }
 }

@@ -14,15 +14,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.MockitoTestExecutionListener;
 import org.springframework.data.domain.Example;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.UUID;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.is;
@@ -34,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 public class DefaultReportServiceTests extends AbstractTestNGSpringContextTests {
 
     private static final LocalDate TEST_DATE = LocalDate.now();
+    private static final UUID TEST_OWNER_ID = UUID.randomUUID();
 
     @MockBean
     private DayReportDao mockReportDao;
@@ -41,10 +48,23 @@ public class DefaultReportServiceTests extends AbstractTestNGSpringContextTests 
     @Autowired
     private DefaultReportService reportService;
 
+    @BeforeClass
+    public void setSecurityContext() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(TEST_OWNER_ID, null,
+                        Arrays.asList(new SimpleGrantedAuthority("ROLE_USER"))));
+    }
+
+    @AfterClass
+    public void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
     public void testGetDayReport() {
         DayReport report = new DayReport();
         report.setDate(TEST_DATE);
+        report.setOwnerId(TEST_OWNER_ID);
         report.setStats(new ReportStats(BigDecimal.TEN, BigDecimal.TEN, BigDecimal.ZERO));
         report.setIncomes(Arrays.asList(new ReportTransaction("tid", BigDecimal.TEN, "test")));
         report.setExpenses(emptyList());

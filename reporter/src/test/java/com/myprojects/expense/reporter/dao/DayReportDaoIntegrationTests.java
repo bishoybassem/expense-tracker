@@ -15,6 +15,7 @@ import org.testng.annotations.Test;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.UUID;
 
 import static java.math.BigDecimal.TEN;
 import static java.math.BigDecimal.ZERO;
@@ -26,9 +27,10 @@ import static org.hamcrest.Matchers.is;
 
 @DataMongoTest
 @ContextConfiguration(classes = ReporterDatabaseConfig.class)
-public class DayReportDaoTests extends AbstractTestNGSpringContextTests {
+public class DayReportDaoIntegrationTests extends AbstractTestNGSpringContextTests {
 
     private static final LocalDate TEST_DATE = LocalDate.now();
+    private static final UUID TEST_OWNER_ID = UUID.randomUUID();
 
     @Autowired
     private DayReportDao dayReportDao;
@@ -51,11 +53,13 @@ public class DayReportDaoTests extends AbstractTestNGSpringContextTests {
 
         DayReport reportProbe = new DayReport();
         reportProbe.setDate(TEST_DATE);
+        reportProbe.setOwnerId(TEST_OWNER_ID);
 
         DayReport report = dayReportDao.findOne(Example.of(reportProbe)).get();
 
         assertThat(report.getId(), is(createdReportId));
         assertThat(report.getDate(), is(TEST_DATE));
+        assertThat(report.getOwnerId(), is(TEST_OWNER_ID));
         assertThat(report.getIncomes(), hasSize(1));
         assertThat(report.getIncomes().get(0).getId(), is("id1"));
         assertThat(report.getIncomes().get(0).getAmount(), is(TEN));
@@ -77,6 +81,7 @@ public class DayReportDaoTests extends AbstractTestNGSpringContextTests {
         expenses.add(new ReportTransaction("id2", TEN, "xyz"));
 
         DayReport report = new DayReport();
+        report.setOwnerId(TEST_OWNER_ID);
         report.setDate(TEST_DATE);
         report.setIncomes(incomes);
         report.setExpenses(expenses);

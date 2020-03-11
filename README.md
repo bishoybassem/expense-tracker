@@ -22,15 +22,13 @@ The application's architecture is shown in the bellow diagram, in addition to br
 
 <img align="right" width="275" src="diagram.svg"/>
 
-* __tracker__: a microservice implemented with Spring Boot that has the following responsibilities:
-  * Offers CRUD API for managing the transactions (expenses/incomes).
-  * Persists the transaction data to a PostgreSQL database.
-  * Notifies other services about transaction events asynchronously through RabbitMQ.
+* __authenticator__: a Spring Boot microservice that offers an API for user signup, persists the user data to a PostgreSQL database, and issues JSON Web Tokens for user login requests. The JWT holds the user's identity, and is required/verified by the other microservices.
+  
+* __tracker__: a Spring Boot microservice that offers a CRUD API for managing the transactions (expenses/incomes), persists the transaction data to a PostgreSQL database, and notifies other services about transaction events asynchronously through RabbitMQ.
 
-* __reporter__: a microservice implemented with Spring Boot that has the following responsibilities:
-  * Consumes transaction events from RabbitMQ (posted by the tracker microservice).
-  * Aggregates the transaction data to the corresponding reports, and persists it to a MongoDB instance.
-  * Offers an API for querying the reports.
+* __reporter__: a Spring Boot microservice that consumes transaction events from RabbitMQ (posted by the tracker microservice), aggregates the transaction data to the corresponding reports, persists the reports to a MongoDB instance, and finally, exposes those reports via an API.
+
+* __api-commons__: a module that holds common POJOs for API responses, along with common servlet filters for JWT verification and request logging.    
 
 * __mq-messages__: a module that offers POJOs, used for the exchange of transaction events between the producers (tracker) and the consumers (reporter).
 [Protobuf](https://developers.google.com/protocol-buffers) is used for generating the POJOs, as well as serialization/deserialization of the event messages.
@@ -49,13 +47,27 @@ To test the setup locally, the following needs to be present/installed:
    ```bash
    ./gradlew composeUp
    ```
-3. Create a transaction (tracker listens on port 8080)
+3. Register a user:
    ```bash
-   curl -X POST http://localhost:8080/v1/transactions -H 'Content-Type: application/json' \
-     -d '{"type": "EXPENSE","amount": "1.23","category": "abc","date": "2017/03/20","comment": "comment"}'
+   curl -X POST http://localhost:8080/v1/users \
+     -H 'Content-Type: application/json' \
+     -d '{"email": "test@gmail.com", "name": "test", "password": "Test1234"}'
    ```
-
-4. Query the report (reporter listens on port 8081)
+4. Login with the created user:
    ```bash
-   curl http://localhost:8080/v1/reports/2017/03/20
+   export TOKEN=$(curl -sX POST http://localhost:8080/v1/access-tokens \
+     -H 'Content-Type: application/json' \
+     -d '{"email": "test@gmail.com", "password": "Test1234"}' | jq -r .token)
+   ```
+5. Create a transaction using the access token from the previous step:
+   ```bash
+   curl -X POST http://localhost:8080/v1/transactions \
+     -H 'Content-Type: application/json' \
+     -H "X-Access-Token: $TOKEN" \
+     -d '{"type": "EXPENSE","amount": "1.23","category": "abc","date": "2017/03/20","comment": "xyz"}'
+   ```
+6. Query the report using the access token from step 4:
+   ```bash
+   curl http://localhost:8080/v1/reports/2017/03/20 \
+     -H "X-Access-Token: $TOKEN"
    ```
