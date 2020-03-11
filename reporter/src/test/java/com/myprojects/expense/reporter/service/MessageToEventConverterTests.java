@@ -11,7 +11,7 @@ import java.util.UUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.text.IsEmptyString.isEmptyString;
+import static org.hamcrest.text.IsEmptyString.emptyString;
 
 public class MessageToEventConverterTests {
 
@@ -22,12 +22,14 @@ public class MessageToEventConverterTests {
         Message message = new Message(Event.newBuilder()
                 .setType(EventType.CREATE)
                 .setTransactionId(UUID.randomUUID().toString())
+                .setOwnerId(UUID.randomUUID().toString())
                 .build()
                 .toByteArray(), null);
 
         Event convertedEvent = (Event) CONVERTER.fromMessage(message);
         assertThat(convertedEvent.getType(), is(EventType.CREATE));
-        assertThat(convertedEvent.getTransactionId(), not(isEmptyString()));
+        assertThat(convertedEvent.getTransactionId(), not(emptyString()));
+        assertThat(convertedEvent.getOwnerId(), not(emptyString()));
     }
 
     @Test(expectedExceptions = MessageConversionException.class)

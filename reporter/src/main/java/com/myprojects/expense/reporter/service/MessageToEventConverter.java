@@ -8,6 +8,9 @@ import org.springframework.amqp.support.converter.AbstractMessageConverter;
 import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.stereotype.Service;
 
+/**
+ * Maps between MQ messages and transaction events.
+ */
 @Service
 public class MessageToEventConverter extends AbstractMessageConverter {
 
@@ -16,6 +19,11 @@ public class MessageToEventConverter extends AbstractMessageConverter {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Converts the given MQ message to a transaction event {@link EventProtos.Event}.
+     *
+     * If the conversion fails, it throws {@link MessageConversionException} with the actual cause.
+     */
     @Override
     public Object fromMessage(Message message) throws MessageConversionException {
         try {

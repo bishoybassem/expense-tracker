@@ -23,8 +23,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.UUID;
 
-import static java.math.BigDecimal.*;
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.TEN;
+import static java.math.BigDecimal.ZERO;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,6 +41,7 @@ import static org.mockito.Mockito.atLeast;
 public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringContextTests {
 
     private static final LocalDate TEST_DATE = LocalDate.now();
+    private static final UUID TEST_OWNER_ID = UUID.randomUUID();
     private static final String TEST_DATE_FORMATTED = TEST_DATE.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     private static final BigDecimal FIVE = new BigDecimal("5");
 
@@ -174,7 +178,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         initialReport.setIncomes(incomes);
         initialReport.setExpenses(expenses);
         initialReport.setStats(new ReportStats(FIVE, TEN, FIVE));
-        Mockito.when(reportService.getDayReportOrCreate(eq(TEST_DATE)))
+        Mockito.when(reportService.getDayReportOrCreate(eq(TEST_DATE), eq(TEST_OWNER_ID)))
                 .thenReturn(initialReport);
     }
 
@@ -184,14 +188,15 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         emptyReport.setExpenses(new ArrayList<>());
         emptyReport.setIncomes(new ArrayList<>());
         emptyReport.setStats(new ReportStats(ZERO, ZERO, ZERO));
-        Mockito.when(reportService.getDayReportOrCreate(eq(TEST_DATE)))
-                .thenReturn(DayReport.emptyReport(TEST_DATE));
+        Mockito.when(reportService.getDayReportOrCreate(eq(TEST_DATE), eq(TEST_OWNER_ID)))
+                .thenReturn(DayReport.emptyReport(TEST_DATE, TEST_OWNER_ID));
     }
 
     private static Event newCreateEvent(String transactionId, boolean isIncome) {
         return Event.newBuilder()
                 .setType(EventType.CREATE)
                 .setTransactionId(transactionId)
+                .setOwnerId(TEST_OWNER_ID.toString())
                 .setTransactionType(isIncome)
                 .setTransactionData(EventData.newBuilder()
                         .setAmount("1")
@@ -204,6 +209,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         return Event.newBuilder()
                 .setType(EventType.DELETE)
                 .setTransactionId(transactionId)
+                .setOwnerId(TEST_OWNER_ID.toString())
                 .setTransactionType(isIncome)
                 .setTransactionData(EventData.newBuilder()
                         .setCategory("abc")
@@ -215,6 +221,7 @@ public class DefaultTransactionEventHandlerTests extends AbstractTestNGSpringCon
         return Event.newBuilder()
                 .setType(EventType.MODIFY)
                 .setTransactionId(transactionId)
+                .setOwnerId(TEST_OWNER_ID.toString())
                 .setTransactionType(isIncome)
                 .setTransactionData(EventData.newBuilder()
                         .setAmount("20")

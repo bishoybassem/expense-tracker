@@ -23,4 +23,5 @@ message Event {
     bool transactionType = 3;
     EventData transactionData = 4;
     EventData oldTransactionData = 5;
+    string ownerId = 6;
 }

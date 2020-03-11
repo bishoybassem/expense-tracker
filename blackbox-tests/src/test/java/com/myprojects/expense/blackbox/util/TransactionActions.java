@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
@@ -19,7 +20,7 @@ public class TransactionActions {
 
     private final String accessToken;
 
-    public TransactionActions(String accessToken) {
+    protected TransactionActions(String accessToken) {
         this.accessToken = accessToken;
     }
 
@@ -42,6 +43,12 @@ public class TransactionActions {
                 .body("id", not(emptyString()));
     }
 
+    public String createAndReturnId(String type, String amount, LocalDate date) {
+        return create(type, amount, date)
+                .extract()
+                .jsonPath().get("id");
+    }
+
     public ValidatableResponse update(String id, String amount, LocalDate date) {
         return given()
                 .body("{" +
@@ -55,7 +62,7 @@ public class TransactionActions {
                 .put(TRANSACTIONS_URL + "/" + id)
                 .then()
                 .log().all()
-                .statusCode(HttpStatus.SC_OK)
+                .statusCode(anyOf(equalTo(HttpStatus.SC_OK), equalTo(HttpStatus.SC_NOT_FOUND)))
                 .contentType(ContentType.JSON)
                 .body("id", not(emptyString()));
     }
@@ -66,7 +73,7 @@ public class TransactionActions {
                 .delete(TRANSACTIONS_URL + "/" + id)
                 .then()
                 .log().all()
-                .statusCode(HttpStatus.SC_NO_CONTENT);
+                .statusCode(anyOf(equalTo(HttpStatus.SC_NO_CONTENT), equalTo(HttpStatus.SC_NOT_FOUND)));
     }
 
     public ValidatableResponse getAll() {
@@ -77,6 +84,10 @@ public class TransactionActions {
                 .log().all()
                 .statusCode(equalTo(HttpStatus.SC_OK))
                 .contentType(ContentType.JSON);
+    }
+
+    public static TransactionActions withToken(String accessToken) {
+        return new TransactionActions(accessToken);
     }
 
 }

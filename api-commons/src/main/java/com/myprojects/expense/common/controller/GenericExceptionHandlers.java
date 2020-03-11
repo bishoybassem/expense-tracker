@@ -19,6 +19,10 @@ public class GenericExceptionHandlers {
 
     private static final Log LOGGER = LogFactory.getLog(GenericExceptionHandlers.class);
 
+    /**
+     * Translates a {@link MethodArgumentNotValidException} into a {@link ValidationErrorResponse}, populated
+     * with all the validation issues that were encountered.
+     */
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ResponseBody
@@ -33,6 +37,10 @@ public class GenericExceptionHandlers {
         return response;
     }
 
+    /**
+     * Translates a {@link MethodArgumentTypeMismatchException} into an {@link ErrorResponse}, stating in its message
+     * which argument has an incorrect type.
+     */
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ResponseBody
@@ -41,6 +49,10 @@ public class GenericExceptionHandlers {
                 exception.getValue(), exception.getRequiredType().getSimpleName());
     }
 
+    /**
+     * Translates a {@link HttpMediaTypeNotSupportedException} into an {@link ErrorResponse}, stating in its message
+     * that the media type used is not supported.
+     */
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ResponseBody
@@ -49,6 +61,10 @@ public class GenericExceptionHandlers {
         return response;
     }
 
+    /**
+     * A generic handler for exceptions, invoked  in case none of the other handlers could handle the exception.
+     * It returns a generic {@link ErrorResponse} with server error status, and logs the exception.
+     */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody

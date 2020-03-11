@@ -21,6 +21,9 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column
+    private UUID ownerId;
+
     @Column(name = "transaction_type")
     @Convert(converter = TransactionTypeJpaConverter.class)
     private TransactionType type;
@@ -43,6 +46,14 @@ public class Transaction {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
     }
 
     public TransactionType getType() {

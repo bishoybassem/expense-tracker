@@ -1,7 +1,7 @@
 package com.myprojects.expense.reporter.config;
 
-import com.myprojects.expense.reporter.service.TransactionEventHandler;
 import com.myprojects.expense.reporter.service.MessageToEventConverter;
+import com.myprojects.expense.reporter.service.TransactionEventHandler;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.FanoutExchange;

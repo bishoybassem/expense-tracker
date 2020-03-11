@@ -8,27 +8,19 @@ import org.apache.http.HttpStatus;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.UUID;
-
 import static org.hamcrest.Matchers.equalTo;
 
 public class ApiSecurityTests {
 
     @Test
     public void testSignUpAndLogin() {
-        UserActions userActions = new UserActions(UUID.randomUUID() + "@gmail.com", "Abcd1234");
+        UserActions userActions = UserActions.randomUser();
 
-        String accessToken = userActions.signUp()
-                .extract()
-                .jsonPath().get("token");
+        String accessToken = userActions.signUpAndReturnToken();
+        TransactionActions.withToken(accessToken).getAll();
 
-        new TransactionActions(accessToken).getAll();
-
-        String anotherToken = userActions.login()
-                .extract()
-                .jsonPath().get("token");
-
-        new TransactionActions(anotherToken).getAll();
+        String anotherToken = userActions.loginAndReturnToken();
+        TransactionActions.withToken(anotherToken).getAll();
     }
 
     @DataProvider

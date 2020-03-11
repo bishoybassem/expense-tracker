@@ -34,8 +34,8 @@ import static org.hamcrest.Matchers.hasSize;
 public class DefaultTransactionEventHandlerIntegrationTests extends AbstractTestNGSpringContextTests {
 
     private static final LocalDate TEST_DATE = LocalDate.now();
+    private static final UUID TEST_OWNER_ID = UUID.randomUUID();
     private static final String TEST_DATE_FORMATTED = TEST_DATE.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-
 
     @Autowired
     private DefaultTransactionEventHandler transactionEventHandler;
@@ -63,7 +63,7 @@ public class DefaultTransactionEventHandlerIntegrationTests extends AbstractTest
         for(Future<Void> result : results) {
             result.get();
         }
-        DayReport report = reportService.getDayReport(TEST_DATE);
+        DayReport report = reportService.getDayReport(TEST_DATE, TEST_OWNER_ID);
         assertThat(report.getStats().getTotal(), comparesEqualTo(BigDecimal.valueOf(events)));
         assertThat(report.getIncomes(), hasSize(events));
     }
@@ -72,6 +72,7 @@ public class DefaultTransactionEventHandlerIntegrationTests extends AbstractTest
         return Event.newBuilder()
                 .setType(EventType.CREATE)
                 .setTransactionId(UUID.randomUUID().toString())
+                .setOwnerId(TEST_OWNER_ID.toString())
                 .setTransactionType(true)
                 .setTransactionData(EventData.newBuilder()
                         .setAmount("1")

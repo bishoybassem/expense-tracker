@@ -8,6 +8,7 @@ import com.myprojects.expense.authenticator.model.response.LoginResponse;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -29,6 +30,12 @@ public class DefaultAppUserService implements AppUserService, UserDetailsService
     @Autowired
     private AccessTokenService accessTokenService;
 
+    /**
+     * Creates a new user based on the given {@link SignUpRequest}, and returns an access token generated from
+     * a call to {@link AccessTokenService#login}.
+     *
+     * If the email already exists, it throws an {@link EmailAlreadyUsedException}.
+     */
     @Override
     public LoginResponse signUp(SignUpRequest request) {
         AppUser user = new AppUser();
@@ -52,6 +59,13 @@ public class DefaultAppUserService implements AppUserService, UserDetailsService
         return accessTokenService.login(request);
     }
 
+    /**
+     * Queries the database for a user with the given email, and returns a {@link UserDetails} instance populated with
+     * his data, This method is used by Spring's {@link AuthenticationManager}, mainly to authenticate users during
+     * login attempts.
+     *
+     * If the email is not found, it throws a {@link UsernameNotFoundException}.
+     */
     @Override
     public UserDetails loadUserByUsername(String email) {
         AppUser appUser = appUserDao.findByEmail(email)

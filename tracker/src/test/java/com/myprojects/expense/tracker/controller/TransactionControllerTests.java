@@ -302,7 +302,7 @@ public class TransactionControllerTests extends AbstractTestNGSpringContextTests
     }
 
     private static Authentication createAuthenticatedToken() {
-        return new UsernamePasswordAuthenticationToken("some-id", null,
+        return new UsernamePasswordAuthenticationToken(UUID.randomUUID(), null,
                 Arrays.asList(new SimpleGrantedAuthority("ROLE_USER")));
     }
 }

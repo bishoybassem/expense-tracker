@@ -11,7 +11,6 @@ import org.testng.annotations.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.UUID;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.comparesEqualTo;
@@ -19,49 +18,58 @@ import static org.hamcrest.Matchers.comparesEqualTo;
 public class ReportTests {
 
     private static final LocalDate TEST_DATE = LocalDate.now();
-    private static final String TEST_USER_EMAIL = UUID.randomUUID() + "@gmail.com";
-    private static final String TEST_USER_PASS = "Abcd1234";
 
     @Test
     public void testReportWithDifferentTransactionActions() {
-        String accessToken = new UserActions(TEST_USER_EMAIL, TEST_USER_PASS).signUp()
-                .extract()
-                .jsonPath().get("token");
+        String accessToken = UserActions.randomUser().signUpAndReturnToken();
+        TransactionActions transactionActions = TransactionActions.withToken(accessToken);
 
-        ReportActions reportActions = new ReportActions(accessToken);
-        TransactionActions transactionActions = new TransactionActions(accessToken);
-
-        emptyReport(TEST_DATE, reportActions, transactionActions);
-
-        String incomeId = transactionActions.create("INCOME", "10", TEST_DATE)
-                .extract().jsonPath().get("id");
-        String expenseId = transactionActions.create("EXPENSE", "1.23", TEST_DATE)
-                .extract().jsonPath().get("id");
-
-        awaitReport(TEST_DATE, "8.77", reportActions);
+        String incomeId = transactionActions.createAndReturnId("INCOME", "10", TEST_DATE);
+        String expenseId = transactionActions.createAndReturnId("EXPENSE", "1.23", TEST_DATE);
+        awaitReport(TEST_DATE, "8.77", accessToken);
 
         transactionActions.update(incomeId, "20", TEST_DATE);
-        transactionActions.delete(expenseId);
+        awaitReport(TEST_DATE, "18.77", accessToken);
 
-        awaitReport(TEST_DATE, "20", reportActions);
+        transactionActions.update(expenseId, "1", TEST_DATE);
+        awaitReport(TEST_DATE, "19.00", accessToken);
+
+        emptyReport(TEST_DATE, accessToken);
     }
 
-    private static void emptyReport(LocalDate date, ReportActions reportActions,
-                                   TransactionActions transactionActions) {
+    @Test
+    public void testReportsOfDifferentUsers() {
+        String user1accessToken = UserActions.randomUser().signUpAndReturnToken();
+        String user2accessToken = UserActions.randomUser().signUpAndReturnToken();
+
+        TransactionActions.withToken(user1accessToken)
+                .create("INCOME", "10", TEST_DATE);
+
+        TransactionActions.withToken(user2accessToken)
+                .create("EXPENSE", "10", TEST_DATE);
+
+        awaitReport(TEST_DATE, "-10", user2accessToken);
+        awaitReport(TEST_DATE, "10", user1accessToken);
+    }
+
+    private static void emptyReport(LocalDate date, String accessToken) {
+        ReportActions reportActions = ReportActions.withToken(accessToken);
         ExtractableResponse<Response> response = reportActions.get(date).extract();
         if (response.statusCode() == HttpStatus.SC_NOT_FOUND) {
             return;
         }
 
+        TransactionActions transactionActions = TransactionActions.withToken(accessToken);
         Arrays.asList("incomes.id", "expenses.id").forEach(path -> {
             response.jsonPath().getList(path, String.class)
                     .forEach(transactionActions::delete);
         });
 
-        awaitReport(date, "0", reportActions);
+        awaitReport(date, "0", accessToken);
     }
 
-    private static void awaitReport(LocalDate date, String expectedAmount, ReportActions reportActions) {
+    private static void awaitReport(LocalDate date, String expectedAmount, String accessToken) {
+        ReportActions reportActions = ReportActions.withToken(accessToken);
         await().until(() -> reportActions.get(date).extract()
                 .jsonPath()
                 .get("stats.total"), comparesEqualTo(new BigDecimal(expectedAmount)));

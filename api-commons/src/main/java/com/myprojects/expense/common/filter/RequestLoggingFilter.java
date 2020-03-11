@@ -4,6 +4,9 @@ import org.springframework.web.filter.AbstractRequestLoggingFilter;
 
 import javax.servlet.http.HttpServletRequest;
 
+/**
+ * Logs the http request info before processing it.
+ */
 public class RequestLoggingFilter extends AbstractRequestLoggingFilter {
 
     public RequestLoggingFilter(boolean includePayload) {
