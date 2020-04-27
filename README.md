@@ -6,21 +6,11 @@
 
 This project implements a web application for tracking expenses, where users would log their daily expenses/incomes, and get back daily/monthly/yearly expense reports. The aim of this project is to practice microservices architecture, not only the application development aspect, but the whole continuous integration (CI) pipeline. 
 
-## Features
-* An automatic build triggered by [Travis CI](https://travis-ci.org/bishoybassem/expense-tracker) that does the following:
-  * Compiles the code.
-  * Runs unit tests.
-  * Starts all apps and services in containers.
-  * Runs integration/blackbox tests.
-  * Collects code coverage during unit and integration test executions.
-  * Uploads code coverage to [Codacy](https://app.codacy.com/project/bishoybassem/expense-tracker/dashboard).
-* An automatic code scan (static analysis) triggered by [Codacy](https://app.codacy.com/project/bishoybassem/expense-tracker/dashboard).
-
 ## Implementation
 
 The application's architecture is shown in the bellow diagram, in addition to brief descriptions for the webapps and Gradle modules within this project:
 
-<img align="right" width="275" src="diagram.svg"/>
+<img align="right" width="275" src="diagram.png"/>
 
 * __authenticator__: a Spring Boot microservice that offers an API for user signup, persists the user data to a PostgreSQL database, and issues JSON Web Tokens for user login requests. The JWT holds the user's identity, and is required/verified by the other microservices.
   
@@ -35,17 +25,27 @@ The application's architecture is shown in the bellow diagram, in addition to br
 
 * __blackbox-tests__: a module that includes full integration tests, simulating different workflows.
 
-## Requirements
-To test the setup locally, the following needs to be present/installed:
-* JDK (used OpenJDK version 11.0.2).
-* Docker (used version 19.03.5-ce).
-* Docker Compose (used version 1.25.0).
+For new commits, an automatic build is triggered by [Travis CI](https://travis-ci.org/bishoybassem/expense-tracker) that does the following:
+  1. Compiles the code.
+  2. Runs unit tests.
+  3. Starts all apps and services in containers.
+  4. Runs integration/blackbox tests.
+  5. Collects code coverage during unit and integration test executions.
+  6. Uploads code coverage to [Codacy](https://app.codacy.com/project/bishoybassem/expense-tracker/dashboard).
 
-## Steps
+Additionally, an automatic code review is triggered by [Codacy](https://app.codacy.com/project/bishoybassem/expense-tracker/dashboard), which would identify issues/bugs through static code analysis, and monitor code quality over time.
+
+## Demo
+To test the setup locally, the following needs to be present/installed:
+* JDK (used OpenJDK version 11.0.6).
+* Docker (used version 19.03.8-ce).
+* Docker Compose (used version 1.25.4).
+
+After installing the requirements listed above, do the following:
 1. Clone the repository, and navigate to the clone directory.
 2. Compile the code, assemble the webapps, and start all the services in Docker by executing this task:
    ```bash
-   ./gradlew composeUp
+   ./gradlew clean composeUp
    ```
 3. Register a user:
    ```bash
